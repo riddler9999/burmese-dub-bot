@@ -133,14 +133,14 @@
         if(localStorage.getItem('tiktok_connected')==='true') {
             area.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.25);font-size:0.85rem;"><span>✅</span> TikTok Connected</div><div style="margin-top:8px;"><button onclick="localStorage.removeItem(\x27tiktok_connected\x27);location.reload();" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:0.7rem;cursor:pointer;">Disconnect</button></div>';
         } else {
-            area.innerHTML = '<a href="tiktok-auth.html" style="display:inline-block;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:0.85rem;background:linear-gradient(135deg,#fe2c55,#ff6b81);color:white;">Connect TikTok</a>';
+            area.innerHTML = '<a href="./tiktok-auth.html" style="display:inline-block;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:0.85rem;background:linear-gradient(135deg,#fe2c55,#ff6b81);color:white;">Connect TikTok</a>';
         }
     })();
     </script>
 
 </div>
 
-<div class="footer"><a href="dashboard.html">Dashboard</a> · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></div>
+<div class="footer"><a href="./dashboard.html">Dashboard</a> · <a href="./terms.html">Terms</a> · <a href="./privacy.html">Privacy</a></div>
 
 <script>
 const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
