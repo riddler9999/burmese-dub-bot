@@ -3,36 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Authorization Successful - Burmese Dub Bot</title>
+    <title>TikTok Authorization - Burmese Dub Bot</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; text-align: center; padding: 24px; }
-        .card { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 48px; max-width: 480px; }
-        h1 { font-size: 1.5rem; margin-bottom: 12px; }
-        p { opacity: 0.75; line-height: 1.6; margin-bottom: 16px; }
-        .icon { font-size: 3rem; margin-bottom: 16px; }
-        .code { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.85rem; word-break: break-all; margin: 16px 0; }
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; padding: 24px; }
+        .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+            padding: 40px; max-width: 480px; text-align: center; }
+        .icon { font-size: 3rem; margin-bottom: 12px; }
+        h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        p { opacity: 0.7; font-size: 0.9rem; margin-bottom: 16px; line-height: 1.6; }
+        .code-box { background: rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; font-family: monospace;
+            font-size: 0.8rem; word-break: break-all; margin: 16px 0; opacity: 0.6; }
+        .status { padding: 10px 16px; border-radius: 8px; margin-top: 12px; font-size: 0.85rem; }
+        .status.ok { background: rgba(76,175,80,0.15); }
+        .status.err { background: rgba(244,67,54,0.15); }
+        .status.loading { background: rgba(247,151,30,0.15); }
+        a { color: #ffd200; }
     </style>
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        window.onload = function() {
-            if (code) {
-                document.getElementById('status').textContent = 'Authorization successful!';
-                document.getElementById('code-display').textContent = 'Auth code: ' + code.substring(0, 20) + '...';
-            }
-        };
-    </script>
 </head>
 <body>
 <div class="card">
-    <div class="icon">✅</div>
-    <h1 id="status">Authorization Complete</h1>
-    <p>Your TikTok account has been connected to Burmese Dub Bot. You can close this window now.</p>
-    <div class="code" id="code-display">Processing...</div>
-    <p>Return to Telegram bot to start dubbing videos.</p>
+    <div class="icon" id="icon">⏳</div>
+    <h1 id="title">Processing Authorization...</h1>
+    <p id="msg">Exchanging authorization code for access token...</p>
+    <div class="code-box" id="codeBox"></div>
+    <div class="status loading" id="statusBox">Connecting to server...</div>
 </div>
+<script>
+const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
+const params = new URLSearchParams(window.location.search);
+const code = params.get('code');
+const error = params.get('error');
+const state = params.get('state');
+
+async function init() {
+    if (error) {
+        setResult('❌', 'Authorization Failed', 'Error: ' + (params.get('error_description') || error), 'err');
+        return;
+    }
+    if (!code) {
+        setResult('❌', 'No Authorization Code', 'No code received from TikTok.', 'err');
+        return;
+    }
+
+    document.getElementById('codeBox').textContent = 'Code: ' + code.substring(0, 20) + '...';
+
+    try {
+        // Send code to n8n webhook to exchange for token
+        const resp = await fetch(`${API}/tiktok-auth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, state })
+        });
+        const data = await resp.json();
+
+        if (data.status === 'success') {
+            setResult('✅', 'TikTok Connected!', 
+                'Your account is now connected. Dubbed videos will be auto-published to your TikTok.', 'ok');
+        } else {
+            setResult('❌', 'Connection Failed', data.message || 'Failed to exchange token.', 'err');
+        }
+    } catch(e) {
+        setResult('⚠️', 'Server Error', 'Could not reach the server. Please try again later.', 'err');
+    }
+}
+
+function setResult(icon, title, msg, type) {
+    document.getElementById('icon').textContent = icon;
+    document.getElementById('title').textContent = title;
+    document.getElementById('msg').textContent = msg;
+    const sb = document.getElementById('statusBox');
+    sb.className = 'status ' + type;
+    sb.textContent = type === 'ok' ? 'Token saved successfully' : msg;
+}
+
+init();
+</script>
 </body>
 </html>
