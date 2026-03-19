@@ -20,53 +20,57 @@
         .status.ok { background: rgba(76,175,80,0.15); }
         .status.err { background: rgba(244,67,54,0.15); }
         .status.loading { background: rgba(247,151,30,0.15); }
-        a { color: #ffd200; }
+        .redirect-msg { margin-top: 16px; font-size: 0.8rem; opacity: 0.4; }
     </style>
 </head>
 <body>
 <div class="card">
     <div class="icon" id="icon">⏳</div>
     <h1 id="title">Processing Authorization...</h1>
-    <p id="msg">Exchanging authorization code for access token...</p>
+    <p id="msg">Exchanging authorization code...</p>
     <div class="code-box" id="codeBox"></div>
     <div class="status loading" id="statusBox">Connecting to server...</div>
+    <div class="redirect-msg" id="redirectMsg"></div>
 </div>
 <script>
 const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
 const params = new URLSearchParams(window.location.search);
 const code = params.get('code');
 const error = params.get('error');
-const state = params.get('state');
 
 async function init() {
     if (error) {
-        setResult('❌', 'Authorization Failed', 'Error: ' + (params.get('error_description') || error), 'err');
+        setResult('❌', 'Authorization Failed', params.get('error_description') || error, 'err');
+        autoRedirect(5);
         return;
     }
     if (!code) {
         setResult('❌', 'No Authorization Code', 'No code received from TikTok.', 'err');
+        autoRedirect(5);
         return;
     }
 
     document.getElementById('codeBox').textContent = 'Code: ' + code.substring(0, 20) + '...';
 
     try {
-        // Send code to n8n webhook to exchange for token
         const resp = await fetch(`${API}/tiktok-auth`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, state })
+            body: JSON.stringify({ code })
         });
         const data = await resp.json();
 
         if (data.status === 'success') {
-            setResult('✅', 'TikTok Connected!', 
+            setResult('✅', 'TikTok Connected!',
                 'Your account is now connected. Dubbed videos will be auto-published to your TikTok.', 'ok');
+            autoRedirect(3);
         } else {
-            setResult('❌', 'Connection Failed', data.message || 'Failed to exchange token.', 'err');
+            setResult('❌', 'Connection Failed', data.message || 'Token exchange failed.', 'err');
+            autoRedirect(5);
         }
     } catch(e) {
-        setResult('⚠️', 'Server Error', 'Could not reach the server. Please try again later.', 'err');
+        setResult('⚠️', 'Server Error', 'Could not reach the server.', 'err');
+        autoRedirect(5);
     }
 }
 
@@ -77,6 +81,22 @@ function setResult(icon, title, msg, type) {
     const sb = document.getElementById('statusBox');
     sb.className = 'status ' + type;
     sb.textContent = type === 'ok' ? 'Token saved successfully' : msg;
+}
+
+function autoRedirect(seconds) {
+    let remaining = seconds;
+    const el = document.getElementById('redirectMsg');
+    el.textContent = `Redirecting to main page in ${remaining}s...`;
+
+    const timer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(timer);
+            window.location.href = 'index.html';
+        } else {
+            el.textContent = `Redirecting to main page in ${remaining}s...`;
+        }
+    }, 1000);
 }
 
 init();
