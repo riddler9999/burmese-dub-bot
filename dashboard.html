@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Burmese Dub Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;color:#fff;background:#0a0a1a;min-height:100vh}
+        .topbar{padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02)}
+        .topbar h1{font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .topbar .user{display:flex;align-items:center;gap:10px;font-size:0.85rem}
+        .topbar .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#302b63,#24243e);display:flex;align-items:center;justify-content:center;font-size:0.8rem;border:2px solid rgba(255,255,255,0.1)}
+        .btn-sm{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-size:0.75rem;font-family:'Inter';transition:all 0.15s}
+        .btn-ghost{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.1)}
+        .btn-ghost:hover{background:rgba(255,255,255,0.1)}
+
+        .main{max-width:800px;margin:0 auto;padding:24px 20px}
+        .section-title{font-size:0.9rem;font-weight:700;margin-bottom:16px;opacity:0.8}
+
+        /* Auth Forms */
+        .auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px}
+        .auth-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px;max-width:380px;width:100%;text-align:center}
+        .auth-card h2{font-size:1.4rem;margin-bottom:6px;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .auth-card p{font-size:0.85rem;opacity:0.5;margin-bottom:24px}
+        .auth-input{width:100%;padding:12px 16px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:white;font-size:0.9rem;font-family:'Inter';outline:none;margin-bottom:10px}
+        .auth-input:focus{border-color:#f7971e}
+        .auth-input::placeholder{color:rgba(255,255,255,0.25)}
+        .btn-auth{width:100%;padding:12px;border-radius:10px;border:none;cursor:pointer;font-size:0.9rem;font-weight:700;font-family:'Inter';background:linear-gradient(135deg,#f7971e,#ffd200);color:#0a0a1a;margin-top:6px}
+        .btn-auth:disabled{opacity:0.4}
+        .auth-switch{margin-top:16px;font-size:0.8rem;opacity:0.5}
+        .auth-switch a{color:#ffd200;cursor:pointer;text-decoration:none}
+        .auth-error{color:#ff6b6b;font-size:0.8rem;margin-top:8px;min-height:20px}
+
+        /* Video Grid */
+        .video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+        .video-card{border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);transition:all 0.15s;cursor:pointer}
+        .video-card:hover{border-color:rgba(255,255,255,0.15);transform:translateY(-2px)}
+        .vc-thumb{aspect-ratio:9/16;background:#111;position:relative;overflow:hidden;max-height:280px}
+        .vc-thumb video{width:100%;height:100%;object-fit:cover}
+        .vc-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);opacity:0;transition:opacity 0.2s}
+        .video-card:hover .vc-play{opacity:1}
+        .vc-play span{font-size:2.5rem}
+        .vc-info{padding:10px 12px}
+        .vc-platform{font-size:0.65rem;opacity:0.4;text-transform:uppercase;letter-spacing:0.5px}
+        .vc-date{font-size:0.75rem;opacity:0.5}
+        .vc-actions{display:flex;gap:6px;margin-top:6px}
+        .vc-btn{padding:5px 10px;border-radius:6px;font-size:0.7rem;border:none;cursor:pointer;font-family:'Inter';font-weight:600}
+        .vc-dl{background:rgba(76,175,80,0.15);color:#66bb6a}
+        .vc-watch{background:rgba(247,151,30,0.15);color:#f7971e}
+
+        /* Video Modal */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+        .modal-overlay.show{display:flex}
+        .modal{max-width:500px;width:100%;max-height:90vh;border-radius:16px;overflow:hidden;background:#111}
+        .modal video{width:100%;max-height:75vh}
+        .modal-bar{padding:14px;display:flex;gap:8px;justify-content:center;background:rgba(255,255,255,0.03)}
+        .modal-bar a,.modal-bar button{padding:8px 18px;border-radius:8px;font-size:0.85rem;font-weight:600;border:none;cursor:pointer;text-decoration:none;font-family:'Inter'}
+
+        .empty{text-align:center;padding:60px 20px;opacity:0.3}
+        .empty .icon{font-size:3rem;margin-bottom:12px}
+        .new-dub-btn{display:inline-block;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:0.9rem;background:linear-gradient(135deg,#f7971e,#ffd200);color:#0a0a1a;margin-top:16px}
+    </style>
+</head>
+<body>
+<!-- Auth Overlay -->
+<div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+        <h2>🎙️ Burmese Dub Bot</h2>
+        <p id="authSubtitle">Create an account to save your dubbed videos</p>
+        <input class="auth-input" id="authUser" placeholder="Username" autocomplete="username">
+        <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password">
+        <button class="btn-auth" id="authBtn" onclick="doAuth()">Create Account</button>
+        <div class="auth-error" id="authError"></div>
+        <div class="auth-switch" id="authSwitch">Already have an account? <a onclick="toggleAuth()">Log in</a></div>
+    </div>
+</div>
+
+<!-- Top Bar -->
+<div class="topbar" id="topbar" style="display:none">
+    <h1>🎙️ Burmese Dub Bot</h1>
+    <div class="user">
+        <div class="avatar" id="avatarLetter">U</div>
+        <span id="displayName">User</span>
+        <button class="btn-sm btn-ghost" onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<!-- Main -->
+<div class="main" id="mainContent" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div class="section-title" style="margin:0">🎬 My Dubbed Videos</div>
+        <a href="index.html" class="btn-sm btn-ghost" style="text-decoration:none">+ New Dub</a>
+    </div>
+    <div id="videoGrid" class="video-grid"></div>
+</div>
+
+<!-- Video Modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <video id="modalVideo" controls playsinline></video>
+        <div class="modal-bar">
+            <a id="modalDl" class="vc-btn vc-dl" style="padding:8px 18px;font-size:0.85rem" download>📥 Download</a>
+            <button class="vc-btn vc-watch" style="padding:8px 18px;font-size:0.85rem" onclick="closeModal()">✕ Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
+let isLogin = false;
+
+// === AUTH ===
+function toggleAuth() {
+    isLogin = !isLogin;
+    document.getElementById('authBtn').textContent = isLogin ? 'Log In' : 'Create Account';
+    document.getElementById('authSubtitle').textContent = isLogin ? 'Log in to see your dubbed videos' : 'Create an account to save your dubbed videos';
+    document.getElementById('authSwitch').innerHTML = isLogin 
+        ? 'New here? <a onclick="toggleAuth()">Create account</a>'
+        : 'Already have an account? <a onclick="toggleAuth()">Log in</a>';
+    document.getElementById('authError').textContent = '';
+}
+
+async function doAuth() {
+    const username = document.getElementById('authUser').value.trim();
+    const password = document.getElementById('authPass').value.trim();
+    if (!username || !password) { document.getElementById('authError').textContent = 'Fill in all fields'; return; }
+    
+    document.getElementById('authBtn').disabled = true;
+    try {
+        const r = await fetch(`${API}/burmese-dub-auth`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ action: isLogin ? 'login' : 'register', username, password })
+        });
+        const d = await r.json();
+        if (d.status === 'success') {
+            localStorage.setItem('dub_token', d.token);
+            localStorage.setItem('dub_user', d.username);
+            showDashboard();
+        } else {
+            document.getElementById('authError').textContent = d.message;
+        }
+    } catch(e) { document.getElementById('authError').textContent = 'Connection failed'; }
+    document.getElementById('authBtn').disabled = false;
+}
+
+function logout() {
+    localStorage.removeItem('dub_token');
+    localStorage.removeItem('dub_user');
+    location.reload();
+}
+
+// === DASHBOARD ===
+async function showDashboard() {
+    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('topbar').style.display = 'flex';
+    document.getElementById('mainContent').style.display = 'block';
+    
+    const user = localStorage.getItem('dub_user');
+    document.getElementById('displayName').textContent = user;
+    document.getElementById('avatarLetter').textContent = user.charAt(0).toUpperCase();
+    
+    loadHistory();
+}
+
+async function loadHistory() {
+    const grid = document.getElementById('videoGrid');
+    grid.innerHTML = '<div style="opacity:0.3;padding:20px;text-align:center">Loading...</div>';
+    
+    try {
+        const r = await fetch(`${API}/burmese-dub-history`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ token: localStorage.getItem('dub_token') })
+        });
+        const d = await r.json();
+        
+        if (d.status === 'error') { grid.innerHTML = '<div class="empty"><div class="icon">🔑</div>Session expired<br><a href="javascript:logout()">Log in again</a></div>'; return; }
+        
+        const history = d.history || [];
+        if (history.length === 0) {
+            grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="icon">🎬</div>No dubbed videos yet<br><a href="index.html" class="new-dub-btn">Create your first dub</a></div>';
+            return;
+        }
+        
+        const platIcons = { youtube:'🔴', tiktok:'🎵', xiaohongshu:'📕' };
+        grid.innerHTML = history.filter(h => h.status === 'done').map(h => {
+            const videoUrl = `${API}/burmese-dub-video?job_id=${h.job_id}`;
+            const icon = platIcons[h.platform] || '🎬';
+            const date = new Date(h.created).toLocaleDateString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+            return `<div class="video-card">
+                <div class="vc-thumb" onclick="openModal('${h.job_id}')">
+                    <video src="${videoUrl}" preload="metadata" muted></video>
+                    <div class="vc-play"><span>▶</span></div>
+                </div>
+                <div class="vc-info">
+                    <div class="vc-platform">${icon} ${h.platform}</div>
+                    <div class="vc-date">${date}</div>
+                    <div class="vc-actions">
+                        <button class="vc-btn vc-watch" onclick="openModal('${h.job_id}')">▶ Watch</button>
+                        <a class="vc-btn vc-dl" href="${videoUrl}" download="burmese_dub_${h.job_id}.mp4">📥 Save</a>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+        
+    } catch(e) { grid.innerHTML = '<div class="empty"><div class="icon">❌</div>Failed to load history</div>'; }
+}
+
+// === MODAL ===
+function openModal(jobId) {
+    const url = `${API}/burmese-dub-video?job_id=${jobId}`;
+    document.getElementById('modalVideo').src = url;
+    document.getElementById('modalDl').href = url;
+    document.getElementById('modalDl').download = `burmese_dub_${jobId}.mp4`;
+    document.getElementById('modal').className = 'modal-overlay show';
+}
+function closeModal() {
+    document.getElementById('modal').className = 'modal-overlay';
+    document.getElementById('modalVideo').pause();
+    document.getElementById('modalVideo').src = '';
+}
+
+// === INIT ===
+(async function() {
+    const token = localStorage.getItem('dub_token');
+    if (token) {
+        try {
+            const r = await fetch(`${API}/burmese-dub-auth`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({action:'verify', token})
+            });
+            const d = await r.json();
+            if (d.status === 'success') { showDashboard(); return; }
+        } catch(e) {}
+    }
+    document.getElementById('authOverlay').style.display = 'flex';
+})();
+</script>
+</body>
+</html>
