@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burmese Dub Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; color: #1a1a2e; background: #fafafa; }
+        .hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 40px 24px;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; }
+        .hero-content { max-width: 640px; }
+        h1 { font-size: 3rem; font-weight: 800; margin-bottom: 16px; background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 1.2rem; opacity: 0.85; margin-bottom: 40px; line-height: 1.6; }
+        .platforms { display: flex; gap: 16px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
+        .platform { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 12px 20px; font-size: 0.95rem; }
+        .features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; margin-bottom: 40px; }
+        .feature { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; }
+        .feature h3 { font-size: 1rem; margin-bottom: 6px; }
+        .feature p { font-size: 0.85rem; opacity: 0.7; }
+        .links { display: flex; gap: 24px; justify-content: center; }
+        .links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+        .links a:hover { color: white; }
+        @media (max-width: 600px) { h1 { font-size: 2rem; } .features { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="hero">
+    <div class="hero-content">
+        <h1>🎙️ Burmese Dub Bot</h1>
+        <p class="subtitle">Automatically translate video voiceovers into Burmese (Myanmar) language. Send a video link, get a dubbed video back.</p>
+        
+        <div class="platforms">
+            <div class="platform">🔴 YouTube</div>
+            <div class="platform">🎵 TikTok</div>
+            <div class="platform">📕 Xiaohongshu</div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>⬇️ Auto Download</h3>
+                <p>Send any video link via Telegram bot</p>
+            </div>
+            <div class="feature">
+                <h3>🎙️ AI Voiceover</h3>
+                <p>Whisper transcribe → Gemini translate → TTS generate</p>
+            </div>
+            <div class="feature">
+                <h3>📤 Auto Publish</h3>
+                <p>Upload to Google Drive & TikTok automatically</p>
+            </div>
+            <div class="feature">
+                <h3>📊 Status Check</h3>
+                <p>Track progress with /status command</p>
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="terms.html">Terms of Service</a>
+            <a href="privacy.html">Privacy Policy</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
