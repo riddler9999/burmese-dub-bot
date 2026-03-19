@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect TikTok - Burmese Dub Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; padding: 24px; }
+        .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+            padding: 48px; max-width: 440px; text-align: center; }
+        h1 { font-size: 1.4rem; margin-bottom: 12px; }
+        p { opacity: 0.7; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6; }
+        .btn { display: inline-block; padding: 14px 32px; border-radius: 12px; text-decoration: none;
+            font-weight: 700; font-size: 1rem; transition: all 0.2s;
+            background: linear-gradient(135deg, #fe2c55, #ff6b81); color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(254,44,85,0.3); }
+        .scopes { margin: 16px 0 24px; text-align: left; background: rgba(255,255,255,0.04);
+            border-radius: 10px; padding: 16px; font-size: 0.8rem; }
+        .scopes li { margin-bottom: 6px; opacity: 0.7; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>🎵 Connect TikTok</h1>
+    <p>Authorize Burmese Dub Bot to upload dubbed videos to your TikTok account.</p>
+    <ul class="scopes">
+        <li>📤 Upload videos to your account</li>
+        <li>📝 Post videos (as private until app is reviewed)</li>
+    </ul>
+    <a class="btn" id="authBtn" href="#">Connect TikTok Account</a>
+    <p style="margin-top:16px;font-size:0.75rem;opacity:0.4;">You can revoke access anytime in TikTok settings.</p>
+</div>
+<script>
+    const csrfState = Math.random().toString(36).substring(2);
+    const authUrl = 'https://www.tiktok.com/v2/auth/authorize/' +
+        '?client_key=sbawoobwpenmqo9zf9' +
+        '&scope=video.upload,video.publish' +
+        '&response_type=code' +
+        '&redirect_uri=' + encodeURIComponent('https://riddler9999.github.io/burmese-dub-bot/callback.html') +
+        '&state=' + csrfState;
+    document.getElementById('authBtn').href = authUrl;
+    sessionStorage.setItem('tiktok_csrf', csrfState);
+</script>
+</body>
+</html>
