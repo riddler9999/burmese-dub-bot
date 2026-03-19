@@ -8,57 +8,66 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; color: #fff; background: #0a0a1a; min-height: 100vh; }
-        
-        .hero { padding: 60px 24px 40px; text-align: center; 
+        .hero { padding: 48px 24px 32px; text-align: center;
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
-        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px;
+        h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;
             background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { font-size: 1.1rem; opacity: 0.75; margin-bottom: 32px; }
-        
-        .platforms { display: flex; gap: 12px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
-        .platform { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); 
-            border-radius: 10px; padding: 10px 18px; font-size: 0.9rem; }
-        
-        .form-section { max-width: 600px; margin: 0 auto; padding: 0 24px 60px; }
-        .input-group { position: relative; margin-bottom: 16px; }
-        .input-group input { width: 100%; padding: 16px 20px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15);
-            background: rgba(255,255,255,0.05); color: white; font-size: 1rem; font-family: 'Inter', sans-serif;
+        .subtitle { font-size: 1rem; opacity: 0.7; margin-bottom: 24px; }
+        .platforms { display: flex; gap: 10px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+        .platform { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px; padding: 8px 16px; font-size: 0.85rem; }
+
+        .form-section { max-width: 600px; margin: 0 auto; padding: 0 24px 40px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 16px; }
+        .input-group input { flex: 1; padding: 14px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.05); color: white; font-size: 0.95rem; font-family: 'Inter', sans-serif;
             outline: none; transition: border-color 0.3s; }
         .input-group input:focus { border-color: #f7971e; }
-        .input-group input::placeholder { color: rgba(255,255,255,0.35); }
-        
-        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; cursor: pointer;
-            font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif; transition: all 0.3s;
-            background: linear-gradient(135deg, #f7971e, #ffd200); color: #0a0a1a; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(247,151,30,0.3); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-        
-        .status-card { margin-top: 24px; padding: 20px; border-radius: 12px; display: none;
+        .input-group input::placeholder { color: rgba(255,255,255,0.3); }
+        .btn { padding: 14px 28px; border-radius: 12px; border: none; cursor: pointer;
+            font-size: 0.95rem; font-weight: 700; font-family: 'Inter', sans-serif; transition: all 0.2s;
+            background: linear-gradient(135deg, #f7971e, #ffd200); color: #0a0a1a; white-space: nowrap; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(247,151,30,0.3); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .result-card { margin-top: 20px; border-radius: 16px; overflow: hidden; display: none;
             border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
-        .status-card.show { display: block; }
-        .status-card.processing { border-color: rgba(247,151,30,0.4); }
-        .status-card.done { border-color: rgba(76,175,80,0.4); }
-        .status-card.error { border-color: rgba(244,67,54,0.4); }
-        
-        .status-icon { font-size: 2rem; margin-bottom: 8px; }
-        .status-text { font-size: 0.95rem; opacity: 0.85; margin-bottom: 12px; }
-        .download-btn { display: inline-block; padding: 12px 24px; border-radius: 10px; text-decoration: none;
-            background: linear-gradient(135deg, #4caf50, #66bb6a); color: white; font-weight: 600; font-size: 0.95rem; }
-        .download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(76,175,80,0.3); }
-        
-        .progress-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); margin-top: 12px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #f7971e, #ffd200);
-            animation: progress 3s ease-in-out infinite; width: 30%; }
-        @keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-        
-        .footer { text-align: center; padding: 24px; opacity: 0.4; font-size: 0.8rem; }
-        .footer a { color: rgba(255,255,255,0.6); text-decoration: none; margin: 0 12px; }
+        .result-card.show { display: block; }
+
+        .result-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        .result-icon { font-size: 1.5rem; }
+        .result-text { font-size: 0.9rem; opacity: 0.8; }
+        .result-header.processing { background: rgba(247,151,30,0.08); }
+        .result-header.done { background: rgba(76,175,80,0.08); }
+        .result-header.error { background: rgba(244,67,54,0.08); }
+
+        .video-container { width: 100%; background: #000; }
+        .video-container video { width: 100%; max-height: 70vh; display: block; }
+
+        .action-bar { padding: 16px 20px; display: flex; gap: 10px; justify-content: center; }
+        .action-btn { padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 600;
+            font-size: 0.85rem; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+        .dl-btn { background: linear-gradient(135deg, #4caf50, #66bb6a); color: white; }
+        .dl-btn:hover { transform: translateY(-1px); }
+        .new-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .new-btn:hover { background: rgba(255,255,255,0.15); }
+
+        .progress-bar { height: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .progress-fill { height: 100%; width: 30%; background: linear-gradient(90deg, #f7971e, #ffd200);
+            animation: slide 2s ease-in-out infinite; }
+        @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+
+        .steps { padding: 12px 20px; font-size: 0.8rem; opacity: 0.5; }
+        .footer { text-align: center; padding: 20px; opacity: 0.3; font-size: 0.75rem; }
+        .footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin: 0 8px; }
+
+        @media (max-width: 500px) { .input-group { flex-direction: column; } h1 { font-size: 1.8rem; } }
     </style>
 </head>
 <body>
 <div class="hero">
     <h1>🎙️ Burmese Dub Bot</h1>
-    <p class="subtitle">Paste a video link — get a Burmese-dubbed version back</p>
+    <p class="subtitle">Paste a video link — get a Burmese-dubbed version</p>
     <div class="platforms">
         <div class="platform">🔴 YouTube</div>
         <div class="platform">🎵 TikTok</div>
@@ -68,126 +77,144 @@
 
 <div class="form-section">
     <div class="input-group">
-        <input type="url" id="videoUrl" placeholder="Paste video link here..." autocomplete="off">
+        <input type="url" id="videoUrl" placeholder="https://youtube.com/shorts/..." autocomplete="off">
+        <button class="btn" id="submitBtn" onclick="submitVideo()">Dub it</button>
     </div>
-    <button class="btn" id="submitBtn" onclick="submitVideo()">🎬 Dub to Burmese</button>
-    
-    <div class="status-card" id="statusCard">
-        <div class="status-icon" id="statusIcon">⏳</div>
-        <div class="status-text" id="statusText">Processing...</div>
-        <div id="downloadArea"></div>
+
+    <div class="result-card" id="resultCard">
+        <div class="result-header processing" id="resultHeader">
+            <div class="result-icon" id="resultIcon">⏳</div>
+            <div class="result-text" id="resultText">Processing...</div>
+        </div>
         <div class="progress-bar" id="progressBar"><div class="progress-fill"></div></div>
+        <div class="steps" id="stepsText">Downloading video...</div>
+
+        <div class="video-container" id="videoContainer" style="display:none;">
+            <video id="videoPlayer" controls playsinline></video>
+        </div>
+
+        <div class="action-bar" id="actionBar" style="display:none;">
+            <a class="action-btn dl-btn" id="downloadBtn" download>📥 Download</a>
+            <button class="action-btn new-btn" onclick="resetForm()">🔄 New Video</button>
+        </div>
     </div>
 </div>
 
 <div class="footer">
-    <a href="terms.html">Terms of Service</a>
-    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a>
 </div>
 
 <script>
-const API_BASE = 'https://n8n.srv1235044.hstgr.cloud/webhook';
-let pollInterval = null;
+const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
+let pollTimer = null;
+const stepMessages = [
+    'Downloading video...',
+    'Extracting audio...',
+    'Transcribing with AI...',
+    'Translating to Burmese...',
+    'Generating voiceover...',
+    'Rendering final video...',
+    'Almost done...'
+];
+let stepIdx = 0;
 
 async function submitVideo() {
     const url = document.getElementById('videoUrl').value.trim();
     if (!url) return;
-    
+
     const btn = document.getElementById('submitBtn');
-    const card = document.getElementById('statusCard');
-    
+    const card = document.getElementById('resultCard');
     btn.disabled = true;
-    btn.textContent = '⏳ Submitting...';
-    card.className = 'status-card show processing';
-    document.getElementById('statusIcon').textContent = '⏳';
-    document.getElementById('statusText').textContent = 'Submitting video for processing...';
-    document.getElementById('downloadArea').innerHTML = '';
+    card.className = 'result-card show';
+    setStatus('processing', '⏳', 'Submitting...');
     document.getElementById('progressBar').style.display = 'block';
-    
+    document.getElementById('videoContainer').style.display = 'none';
+    document.getElementById('actionBar').style.display = 'none';
+    stepIdx = 0;
+
     try {
-        const resp = await fetch(`${API_BASE}/burmese-dub`, {
+        const resp = await fetch(`${API}/burmese-dub`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url })
         });
         const data = await resp.json();
-        
+
         if (data.status === 'error') {
-            showError(data.message);
+            setStatus('error', '❌', data.message);
             btn.disabled = false;
-            btn.textContent = '🎬 Dub to Burmese';
             return;
         }
-        
-        // Extract job_id from work_dir timestamp
-        const jobId = url.replace(/\D/g, '').slice(-10) + Date.now().toString().slice(-5);
-        
-        document.getElementById('statusText').textContent = 
-            `Processing ${data.platform || 'video'}... This takes 2-5 minutes.`;
-        btn.textContent = '⏳ Processing...';
-        
-        // Start polling for status
-        startPolling(data.work_dir || jobId);
-        
-    } catch (err) {
-        showError('Connection failed. Please try again.');
+
+        const jobId = data.job_id;
+        setStatus('processing', '⏳', `Processing ${data.platform || 'video'}...`);
+        startPolling(jobId);
+        startStepRotation();
+
+    } catch (e) {
+        setStatus('error', '❌', 'Connection failed. Try again.');
         btn.disabled = false;
-        btn.textContent = '🎬 Dub to Burmese';
     }
 }
 
 function startPolling(jobId) {
-    // Extract timestamp from work_dir path
-    const id = jobId.split('/').pop();
     let attempts = 0;
-    const maxAttempts = 120; // 10 min max
-    
-    pollInterval = setInterval(async () => {
+    pollTimer = setInterval(async () => {
         attempts++;
-        if (attempts > maxAttempts) {
-            clearInterval(pollInterval);
-            showError('Processing timed out. Please try again.');
-            return;
-        }
-        
+        if (attempts > 150) { clearInterval(pollTimer); setStatus('error', '❌', 'Timed out.'); return; }
         try {
-            const resp = await fetch(`${API_BASE}/burmese-dub-status?job_id=${id}`);
-            const data = await resp.json();
-            
-            if (data.status === 'done') {
-                clearInterval(pollInterval);
-                showDone(data);
-            } else if (data.status === 'error') {
-                clearInterval(pollInterval);
-                showError(data.error || 'Processing failed');
+            const r = await fetch(`${API}/burmese-dub-status?job_id=${jobId}`);
+            const d = await r.json();
+            if (d.status === 'done') {
+                clearInterval(pollTimer);
+                showVideo(jobId);
+            } else if (d.status === 'error') {
+                clearInterval(pollTimer);
+                setStatus('error', '❌', d.error || 'Failed');
+                document.getElementById('submitBtn').disabled = false;
             }
-        } catch(e) { /* keep polling */ }
-    }, 5000);
+        } catch(e) {}
+    }, 4000);
 }
 
-function showDone(data) {
-    const card = document.getElementById('statusCard');
-    card.className = 'status-card show done';
-    document.getElementById('statusIcon').textContent = '✅';
-    document.getElementById('statusText').textContent = 'Burmese dubbed video is ready!';
-    document.getElementById('progressBar').style.display = 'none';
-    document.getElementById('downloadArea').innerHTML = 
-        `<a class="download-btn" href="${data.drive_url}" target="_blank">📥 Download from Google Drive</a>`;
-    
-    document.getElementById('submitBtn').disabled = false;
-    document.getElementById('submitBtn').textContent = '🎬 Dub Another Video';
+function startStepRotation() {
+    const si = setInterval(() => {
+        stepIdx++;
+        if (stepIdx >= stepMessages.length) { clearInterval(si); return; }
+        document.getElementById('stepsText').textContent = stepMessages[stepIdx];
+    }, 25000);
 }
 
-function showError(msg) {
-    const card = document.getElementById('statusCard');
-    card.className = 'status-card show error';
-    document.getElementById('statusIcon').textContent = '❌';
-    document.getElementById('statusText').textContent = msg;
+function showVideo(jobId) {
+    const videoUrl = `${API}/burmese-dub-video?job_id=${jobId}`;
+    setStatus('done', '✅', 'Burmese dubbed video ready!');
     document.getElementById('progressBar').style.display = 'none';
-    document.getElementById('downloadArea').innerHTML = '';
-    
+    document.getElementById('stepsText').textContent = '';
+
+    const player = document.getElementById('videoPlayer');
+    player.src = videoUrl;
+    document.getElementById('videoContainer').style.display = 'block';
+
+    const dlBtn = document.getElementById('downloadBtn');
+    dlBtn.href = videoUrl;
+    dlBtn.download = `burmese_dub_${jobId}.mp4`;
+    document.getElementById('actionBar').style.display = 'flex';
     document.getElementById('submitBtn').disabled = false;
-    document.getElementById('submitBtn').textContent = '🎬 Try Again';
+}
+
+function setStatus(type, icon, text) {
+    document.getElementById('resultHeader').className = 'result-header ' + type;
+    document.getElementById('resultIcon').textContent = icon;
+    document.getElementById('resultText').textContent = text;
+}
+
+function resetForm() {
+    document.getElementById('resultCard').className = 'result-card';
+    document.getElementById('videoUrl').value = '';
+    document.getElementById('videoContainer').style.display = 'none';
+    document.getElementById('actionBar').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    if (pollTimer) clearInterval(pollTimer);
 }
 </script>
 </body>
