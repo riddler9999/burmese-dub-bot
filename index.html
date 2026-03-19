@@ -7,60 +7,188 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; color: #1a1a2e; background: #fafafa; }
-        .hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 40px 24px;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; }
-        .hero-content { max-width: 640px; }
-        h1 { font-size: 3rem; font-weight: 800; margin-bottom: 16px; background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { font-size: 1.2rem; opacity: 0.85; margin-bottom: 40px; line-height: 1.6; }
-        .platforms { display: flex; gap: 16px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
-        .platform { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 12px 20px; font-size: 0.95rem; }
-        .features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; margin-bottom: 40px; }
-        .feature { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; }
-        .feature h3 { font-size: 1rem; margin-bottom: 6px; }
-        .feature p { font-size: 0.85rem; opacity: 0.7; }
-        .links { display: flex; gap: 24px; justify-content: center; }
-        .links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
-        .links a:hover { color: white; }
-        @media (max-width: 600px) { h1 { font-size: 2rem; } .features { grid-template-columns: 1fr; } }
+        body { font-family: 'Inter', sans-serif; color: #fff; background: #0a0a1a; min-height: 100vh; }
+        
+        .hero { padding: 60px 24px 40px; text-align: center; 
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px;
+            background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 1.1rem; opacity: 0.75; margin-bottom: 32px; }
+        
+        .platforms { display: flex; gap: 12px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
+        .platform { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); 
+            border-radius: 10px; padding: 10px 18px; font-size: 0.9rem; }
+        
+        .form-section { max-width: 600px; margin: 0 auto; padding: 0 24px 60px; }
+        .input-group { position: relative; margin-bottom: 16px; }
+        .input-group input { width: 100%; padding: 16px 20px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05); color: white; font-size: 1rem; font-family: 'Inter', sans-serif;
+            outline: none; transition: border-color 0.3s; }
+        .input-group input:focus { border-color: #f7971e; }
+        .input-group input::placeholder { color: rgba(255,255,255,0.35); }
+        
+        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; cursor: pointer;
+            font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif; transition: all 0.3s;
+            background: linear-gradient(135deg, #f7971e, #ffd200); color: #0a0a1a; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(247,151,30,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .status-card { margin-top: 24px; padding: 20px; border-radius: 12px; display: none;
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
+        .status-card.show { display: block; }
+        .status-card.processing { border-color: rgba(247,151,30,0.4); }
+        .status-card.done { border-color: rgba(76,175,80,0.4); }
+        .status-card.error { border-color: rgba(244,67,54,0.4); }
+        
+        .status-icon { font-size: 2rem; margin-bottom: 8px; }
+        .status-text { font-size: 0.95rem; opacity: 0.85; margin-bottom: 12px; }
+        .download-btn { display: inline-block; padding: 12px 24px; border-radius: 10px; text-decoration: none;
+            background: linear-gradient(135deg, #4caf50, #66bb6a); color: white; font-weight: 600; font-size: 0.95rem; }
+        .download-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(76,175,80,0.3); }
+        
+        .progress-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); margin-top: 12px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #f7971e, #ffd200);
+            animation: progress 3s ease-in-out infinite; width: 30%; }
+        @keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+        
+        .footer { text-align: center; padding: 24px; opacity: 0.4; font-size: 0.8rem; }
+        .footer a { color: rgba(255,255,255,0.6); text-decoration: none; margin: 0 12px; }
     </style>
 </head>
 <body>
 <div class="hero">
-    <div class="hero-content">
-        <h1>🎙️ Burmese Dub Bot</h1>
-        <p class="subtitle">Automatically translate video voiceovers into Burmese (Myanmar) language. Send a video link, get a dubbed video back.</p>
-        
-        <div class="platforms">
-            <div class="platform">🔴 YouTube</div>
-            <div class="platform">🎵 TikTok</div>
-            <div class="platform">📕 Xiaohongshu</div>
-        </div>
-
-        <div class="features">
-            <div class="feature">
-                <h3>⬇️ Auto Download</h3>
-                <p>Send any video link via Telegram bot</p>
-            </div>
-            <div class="feature">
-                <h3>🎙️ AI Voiceover</h3>
-                <p>Whisper transcribe → Gemini translate → TTS generate</p>
-            </div>
-            <div class="feature">
-                <h3>📤 Auto Publish</h3>
-                <p>Upload to Google Drive & TikTok automatically</p>
-            </div>
-            <div class="feature">
-                <h3>📊 Status Check</h3>
-                <p>Track progress with /status command</p>
-            </div>
-        </div>
-
-        <div class="links">
-            <a href="terms.html">Terms of Service</a>
-            <a href="privacy.html">Privacy Policy</a>
-        </div>
+    <h1>🎙️ Burmese Dub Bot</h1>
+    <p class="subtitle">Paste a video link — get a Burmese-dubbed version back</p>
+    <div class="platforms">
+        <div class="platform">🔴 YouTube</div>
+        <div class="platform">🎵 TikTok</div>
+        <div class="platform">📕 Xiaohongshu</div>
     </div>
 </div>
+
+<div class="form-section">
+    <div class="input-group">
+        <input type="url" id="videoUrl" placeholder="Paste video link here..." autocomplete="off">
+    </div>
+    <button class="btn" id="submitBtn" onclick="submitVideo()">🎬 Dub to Burmese</button>
+    
+    <div class="status-card" id="statusCard">
+        <div class="status-icon" id="statusIcon">⏳</div>
+        <div class="status-text" id="statusText">Processing...</div>
+        <div id="downloadArea"></div>
+        <div class="progress-bar" id="progressBar"><div class="progress-fill"></div></div>
+    </div>
+</div>
+
+<div class="footer">
+    <a href="terms.html">Terms of Service</a>
+    <a href="privacy.html">Privacy Policy</a>
+</div>
+
+<script>
+const API_BASE = 'https://n8n.srv1235044.hstgr.cloud/webhook';
+let pollInterval = null;
+
+async function submitVideo() {
+    const url = document.getElementById('videoUrl').value.trim();
+    if (!url) return;
+    
+    const btn = document.getElementById('submitBtn');
+    const card = document.getElementById('statusCard');
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Submitting...';
+    card.className = 'status-card show processing';
+    document.getElementById('statusIcon').textContent = '⏳';
+    document.getElementById('statusText').textContent = 'Submitting video for processing...';
+    document.getElementById('downloadArea').innerHTML = '';
+    document.getElementById('progressBar').style.display = 'block';
+    
+    try {
+        const resp = await fetch(`${API_BASE}/burmese-dub`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+        const data = await resp.json();
+        
+        if (data.status === 'error') {
+            showError(data.message);
+            btn.disabled = false;
+            btn.textContent = '🎬 Dub to Burmese';
+            return;
+        }
+        
+        // Extract job_id from work_dir timestamp
+        const jobId = url.replace(/\D/g, '').slice(-10) + Date.now().toString().slice(-5);
+        
+        document.getElementById('statusText').textContent = 
+            `Processing ${data.platform || 'video'}... This takes 2-5 minutes.`;
+        btn.textContent = '⏳ Processing...';
+        
+        // Start polling for status
+        startPolling(data.work_dir || jobId);
+        
+    } catch (err) {
+        showError('Connection failed. Please try again.');
+        btn.disabled = false;
+        btn.textContent = '🎬 Dub to Burmese';
+    }
+}
+
+function startPolling(jobId) {
+    // Extract timestamp from work_dir path
+    const id = jobId.split('/').pop();
+    let attempts = 0;
+    const maxAttempts = 120; // 10 min max
+    
+    pollInterval = setInterval(async () => {
+        attempts++;
+        if (attempts > maxAttempts) {
+            clearInterval(pollInterval);
+            showError('Processing timed out. Please try again.');
+            return;
+        }
+        
+        try {
+            const resp = await fetch(`${API_BASE}/burmese-dub-status?job_id=${id}`);
+            const data = await resp.json();
+            
+            if (data.status === 'done') {
+                clearInterval(pollInterval);
+                showDone(data);
+            } else if (data.status === 'error') {
+                clearInterval(pollInterval);
+                showError(data.error || 'Processing failed');
+            }
+        } catch(e) { /* keep polling */ }
+    }, 5000);
+}
+
+function showDone(data) {
+    const card = document.getElementById('statusCard');
+    card.className = 'status-card show done';
+    document.getElementById('statusIcon').textContent = '✅';
+    document.getElementById('statusText').textContent = 'Burmese dubbed video is ready!';
+    document.getElementById('progressBar').style.display = 'none';
+    document.getElementById('downloadArea').innerHTML = 
+        `<a class="download-btn" href="${data.drive_url}" target="_blank">📥 Download from Google Drive</a>`;
+    
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = '🎬 Dub Another Video';
+}
+
+function showError(msg) {
+    const card = document.getElementById('statusCard');
+    card.className = 'status-card show error';
+    document.getElementById('statusIcon').textContent = '❌';
+    document.getElementById('statusText').textContent = msg;
+    document.getElementById('progressBar').style.display = 'none';
+    document.getElementById('downloadArea').innerHTML = '';
+    
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = '🎬 Try Again';
+}
+</script>
 </body>
 </html>
