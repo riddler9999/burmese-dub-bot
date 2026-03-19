@@ -91,7 +91,7 @@
 <div class="main" id="mainContent" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <div class="section-title" style="margin:0">🎬 My Dubbed Videos</div>
-        <a href="index.html" class="btn-sm btn-ghost" style="text-decoration:none">+ New Dub</a>
+        <a href="./index.html" class="btn-sm btn-ghost" style="text-decoration:none">+ New Dub</a>
     </div>
     <div id="videoGrid" class="video-grid"></div>
 </div>
@@ -179,7 +179,7 @@ async function loadHistory() {
         
         const history = d.history || [];
         if (history.length === 0) {
-            grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="icon">🎬</div>No dubbed videos yet<br><a href="index.html" class="new-dub-btn">Create your first dub</a></div>';
+            grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="icon">🎬</div>No dubbed videos yet<br><a href="./index.html" class="new-dub-btn">Create your first dub</a></div>';
             return;
         }
         
