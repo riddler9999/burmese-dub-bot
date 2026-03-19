@@ -8,60 +8,73 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; color: #fff; background: #0a0a1a; min-height: 100vh; }
-        .hero { padding: 48px 24px 32px; text-align: center;
+        .hero { padding: 40px 24px 28px; text-align: center;
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
-        h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;
+        h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px;
             background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { font-size: 1rem; opacity: 0.7; margin-bottom: 24px; }
-        .platforms { display: flex; gap: 10px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
-        .platform { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px; padding: 8px 16px; font-size: 0.85rem; }
+        .subtitle { font-size: 0.95rem; opacity: 0.65; margin-bottom: 20px; }
+        .platforms { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+        .platform { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; }
 
-        .form-section { max-width: 600px; margin: 0 auto; padding: 0 24px 40px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 16px; }
-        .input-group input { flex: 1; padding: 14px 18px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.12);
-            background: rgba(255,255,255,0.05); color: white; font-size: 0.95rem; font-family: 'Inter', sans-serif;
-            outline: none; transition: border-color 0.3s; }
-        .input-group input:focus { border-color: #f7971e; }
-        .input-group input::placeholder { color: rgba(255,255,255,0.3); }
-        .btn { padding: 14px 28px; border-radius: 12px; border: none; cursor: pointer;
-            font-size: 0.95rem; font-weight: 700; font-family: 'Inter', sans-serif; transition: all 0.2s;
+        .main { max-width: 640px; margin: 0 auto; padding: 0 20px 40px; }
+        .input-row { display: flex; gap: 8px; margin-bottom: 16px; }
+        .input-row input { flex: 1; padding: 13px 16px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04); color: white; font-size: 0.9rem; font-family: 'Inter', sans-serif;
+            outline: none; transition: border-color 0.2s; }
+        .input-row input:focus { border-color: #f7971e; }
+        .input-row input::placeholder { color: rgba(255,255,255,0.25); }
+        .btn-submit { padding: 13px 24px; border-radius: 10px; border: none; cursor: pointer;
+            font-size: 0.9rem; font-weight: 700; font-family: 'Inter', sans-serif; transition: all 0.2s;
             background: linear-gradient(135deg, #f7971e, #ffd200); color: #0a0a1a; white-space: nowrap; }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(247,151,30,0.3); }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(247,151,30,0.25); }
+        .btn-submit:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-        .result-card { margin-top: 20px; border-radius: 16px; overflow: hidden; display: none;
-            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
-        .result-card.show { display: block; }
+        /* Result card */
+        .result { margin-top: 16px; border-radius: 14px; overflow: hidden; display: none;
+            border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+        .result.show { display: block; }
+        .result-bar { padding: 14px 18px; display: flex; align-items: center; gap: 10px; font-size: 0.88rem; }
+        .result-bar.processing { background: rgba(247,151,30,0.06); }
+        .result-bar.done { background: rgba(76,175,80,0.06); }
+        .result-bar.error { background: rgba(244,67,54,0.06); }
+        .result-bar .icon { font-size: 1.3rem; }
+        .result-bar .msg { opacity: 0.8; }
+        .prog { height: 2px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .prog-fill { height: 100%; width: 25%; background: linear-gradient(90deg, #f7971e, #ffd200);
+            animation: sl 2s ease-in-out infinite; }
+        @keyframes sl { 0%{transform:translateX(-100%)} 100%{transform:translateX(500%)} }
+        .step-text { padding: 8px 18px; font-size: 0.75rem; opacity: 0.35; }
+        .vid-wrap { background: #000; }
+        .vid-wrap video { width: 100%; max-height: 65vh; display: block; }
+        .actions { padding: 14px 18px; display: flex; gap: 8px; justify-content: center; }
+        .btn-dl { padding: 9px 18px; border-radius: 8px; text-decoration: none; font-weight: 600;
+            font-size: 0.82rem; background: linear-gradient(135deg, #4caf50, #66bb6a); color: white; border: none; cursor: pointer; }
+        .btn-new { padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: 0.82rem;
+            background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; }
 
-        .result-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
-        .result-icon { font-size: 1.5rem; }
-        .result-text { font-size: 0.9rem; opacity: 0.8; }
-        .result-header.processing { background: rgba(247,151,30,0.08); }
-        .result-header.done { background: rgba(76,175,80,0.08); }
-        .result-header.error { background: rgba(244,67,54,0.08); }
+        /* History */
+        .history-section { margin-top: 32px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .history-title { font-size: 0.95rem; font-weight: 700; opacity: 0.9; }
+        .history-clear { font-size: 0.75rem; opacity: 0.4; cursor: pointer; background: none; border: none; color: white; }
+        .history-clear:hover { opacity: 0.7; }
+        .history-list { display: flex; flex-direction: column; gap: 8px; }
+        .history-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.15s; }
+        .history-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        .hi-thumb { width: 48px; height: 48px; border-radius: 8px; background: rgba(255,255,255,0.08);
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+        .hi-info { flex: 1; min-width: 0; }
+        .hi-platform { font-size: 0.7rem; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hi-url { font-size: 0.8rem; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hi-time { font-size: 0.7rem; opacity: 0.3; }
+        .hi-status { font-size: 1rem; flex-shrink: 0; }
+        .history-empty { text-align: center; padding: 24px; opacity: 0.25; font-size: 0.85rem; }
 
-        .video-container { width: 100%; background: #000; }
-        .video-container video { width: 100%; max-height: 70vh; display: block; }
-
-        .action-bar { padding: 16px 20px; display: flex; gap: 10px; justify-content: center; }
-        .action-btn { padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 600;
-            font-size: 0.85rem; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
-        .dl-btn { background: linear-gradient(135deg, #4caf50, #66bb6a); color: white; }
-        .dl-btn:hover { transform: translateY(-1px); }
-        .new-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
-        .new-btn:hover { background: rgba(255,255,255,0.15); }
-
-        .progress-bar { height: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
-        .progress-fill { height: 100%; width: 30%; background: linear-gradient(90deg, #f7971e, #ffd200);
-            animation: slide 2s ease-in-out infinite; }
-        @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-
-        .steps { padding: 12px 20px; font-size: 0.8rem; opacity: 0.5; }
-        .footer { text-align: center; padding: 20px; opacity: 0.3; font-size: 0.75rem; }
-        .footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin: 0 8px; }
-
-        @media (max-width: 500px) { .input-group { flex-direction: column; } h1 { font-size: 1.8rem; } }
+        .footer { text-align: center; padding: 20px; opacity: 0.25; font-size: 0.7rem; }
+        .footer a { color: rgba(255,255,255,0.4); text-decoration: none; margin: 0 6px; }
+        @media (max-width: 500px) { .input-row { flex-direction: column; } h1 { font-size: 1.6rem; } }
     </style>
 </head>
 <body>
@@ -75,147 +88,199 @@
     </div>
 </div>
 
-<div class="form-section">
-    <div class="input-group">
+<div class="main">
+    <div class="input-row">
         <input type="url" id="videoUrl" placeholder="https://youtube.com/shorts/..." autocomplete="off">
-        <button class="btn" id="submitBtn" onclick="submitVideo()">Dub it</button>
+        <button class="btn-submit" id="submitBtn" onclick="submitVideo()">Dub it</button>
     </div>
 
-    <div class="result-card" id="resultCard">
-        <div class="result-header processing" id="resultHeader">
-            <div class="result-icon" id="resultIcon">⏳</div>
-            <div class="result-text" id="resultText">Processing...</div>
+    <div class="result" id="resultCard">
+        <div class="result-bar processing" id="rBar">
+            <div class="icon" id="rIcon">⏳</div>
+            <div class="msg" id="rMsg">Processing...</div>
         </div>
-        <div class="progress-bar" id="progressBar"><div class="progress-fill"></div></div>
-        <div class="steps" id="stepsText">Downloading video...</div>
+        <div class="prog" id="progBar"><div class="prog-fill"></div></div>
+        <div class="step-text" id="stepText">Downloading video...</div>
+        <div class="vid-wrap" id="vidWrap" style="display:none"><video id="player" controls playsinline></video></div>
+        <div class="actions" id="actBar" style="display:none">
+            <a class="btn-dl" id="dlBtn" download>📥 Download</a>
+            <button class="btn-new" onclick="resetForm()">🔄 New</button>
+        </div>
+    </div>
 
-        <div class="video-container" id="videoContainer" style="display:none;">
-            <video id="videoPlayer" controls playsinline></video>
+    <div class="history-section" id="historySection">
+        <div class="history-header">
+            <div class="history-title">📋 History</div>
+            <button class="history-clear" onclick="clearHistory()">Clear all</button>
         </div>
-
-        <div class="action-bar" id="actionBar" style="display:none;">
-            <a class="action-btn dl-btn" id="downloadBtn" download>📥 Download</a>
-            <button class="action-btn new-btn" onclick="resetForm()">🔄 New Video</button>
-        </div>
+        <div class="history-list" id="historyList"></div>
     </div>
 </div>
 
-<div class="footer">
-    <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a>
-</div>
+<div class="footer"><a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></div>
 
 <script>
 const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
 let pollTimer = null;
-const stepMessages = [
-    'Downloading video...',
-    'Extracting audio...',
-    'Transcribing with AI...',
-    'Translating to Burmese...',
-    'Generating voiceover...',
-    'Rendering final video...',
-    'Almost done...'
-];
-let stepIdx = 0;
+const steps = ['Downloading video...','Extracting audio...','Transcribing with AI...','Translating to Burmese...','Generating voiceover...','Rendering final video...','Almost done...'];
+let stepI = 0, stepTimer = null;
 
-async function submitVideo() {
-    const url = document.getElementById('videoUrl').value.trim();
-    if (!url) return;
+// === HISTORY (localStorage) ===
+function getHistory() {
+    try { return JSON.parse(localStorage.getItem('dubHistory') || '[]'); } catch(e) { return []; }
+}
+function saveHistory(items) { localStorage.setItem('dubHistory', JSON.stringify(items)); }
 
-    const btn = document.getElementById('submitBtn');
-    const card = document.getElementById('resultCard');
-    btn.disabled = true;
-    card.className = 'result-card show';
-    setStatus('processing', '⏳', 'Submitting...');
-    document.getElementById('progressBar').style.display = 'block';
-    document.getElementById('videoContainer').style.display = 'none';
-    document.getElementById('actionBar').style.display = 'none';
-    stepIdx = 0;
+function addToHistory(jobId, url, platform, status) {
+    const h = getHistory();
+    const existing = h.findIndex(x => x.jobId === jobId);
+    const entry = { jobId, url, platform, status, time: new Date().toISOString() };
+    if (existing >= 0) h[existing] = entry; else h.unshift(entry);
+    if (h.length > 20) h.length = 20;
+    saveHistory(h);
+    renderHistory();
+}
 
-    try {
-        const resp = await fetch(`${API}/burmese-dub`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
-        });
-        const data = await resp.json();
+function clearHistory() { saveHistory([]); renderHistory(); }
 
-        if (data.status === 'error') {
-            setStatus('error', '❌', data.message);
-            btn.disabled = false;
-            return;
-        }
+function renderHistory() {
+    const h = getHistory();
+    const list = document.getElementById('historyList');
+    if (h.length === 0) {
+        list.innerHTML = '<div class="history-empty">No history yet</div>';
+        return;
+    }
+    const platIcons = { youtube: '🔴', tiktok: '🎵', xiaohongshu: '📕' };
+    const statusIcons = { done: '✅', error: '❌', processing: '⏳' };
+    list.innerHTML = h.map(item => {
+        const icon = platIcons[item.platform] || '🎬';
+        const sIcon = statusIcons[item.status] || '⏳';
+        const ago = timeAgo(item.time);
+        const shortUrl = item.url.replace(/https?:\/\/(www\.)?/, '').substring(0, 45);
+        return `<div class="history-item" onclick="openHistory('${item.jobId}','${item.status}')">
+            <div class="hi-thumb">${icon}</div>
+            <div class="hi-info">
+                <div class="hi-platform">${item.platform}</div>
+                <div class="hi-url">${shortUrl}</div>
+                <div class="hi-time">${ago}</div>
+            </div>
+            <div class="hi-status">${sIcon}</div>
+        </div>`;
+    }).join('');
+}
 
-        const jobId = data.job_id;
-        setStatus('processing', '⏳', `Processing ${data.platform || 'video'}...`);
+function openHistory(jobId, status) {
+    if (status === 'done') {
+        showVideo(jobId);
+        document.getElementById('resultCard').className = 'result show';
+    } else if (status === 'processing') {
+        document.getElementById('resultCard').className = 'result show';
+        setBar('processing', '⏳', 'Still processing...');
+        document.getElementById('progBar').style.display = 'block';
         startPolling(jobId);
-        startStepRotation();
-
-    } catch (e) {
-        setStatus('error', '❌', 'Connection failed. Try again.');
-        btn.disabled = false;
     }
 }
 
+function timeAgo(iso) {
+    const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s/60) + ' min ago';
+    if (s < 86400) return Math.floor(s/3600) + ' hr ago';
+    return Math.floor(s/86400) + ' days ago';
+}
+
+// === SUBMIT ===
+async function submitVideo() {
+    const url = document.getElementById('videoUrl').value.trim();
+    if (!url) return;
+    const btn = document.getElementById('submitBtn');
+    const card = document.getElementById('resultCard');
+    btn.disabled = true;
+    card.className = 'result show';
+    setBar('processing', '⏳', 'Submitting...');
+    showProgress(true); hidePlayer(); stepI = 0;
+
+    try {
+        const resp = await fetch(`${API}/burmese-dub`, {
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url})
+        });
+        const data = await resp.json();
+        if (data.status === 'error') { setBar('error','❌',data.message); btn.disabled=false; return; }
+
+        const jobId = data.job_id;
+        addToHistory(jobId, url, data.platform, 'processing');
+        setBar('processing', '⏳', `Processing ${data.platform||'video'}...`);
+        startPolling(jobId);
+        startSteps();
+    } catch(e) { setBar('error','❌','Connection failed.'); btn.disabled=false; }
+}
+
 function startPolling(jobId) {
-    let attempts = 0;
+    let att = 0;
+    if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(async () => {
-        attempts++;
-        if (attempts > 150) { clearInterval(pollTimer); setStatus('error', '❌', 'Timed out.'); return; }
+        att++;
+        if (att > 150) { clearInterval(pollTimer); setBar('error','❌','Timed out.'); return; }
         try {
             const r = await fetch(`${API}/burmese-dub-status?job_id=${jobId}`);
             const d = await r.json();
             if (d.status === 'done') {
-                clearInterval(pollTimer);
+                clearInterval(pollTimer); if(stepTimer) clearInterval(stepTimer);
+                addToHistory(jobId, d.source_url||'', d.platform||'', 'done');
                 showVideo(jobId);
             } else if (d.status === 'error') {
-                clearInterval(pollTimer);
-                setStatus('error', '❌', d.error || 'Failed');
+                clearInterval(pollTimer); if(stepTimer) clearInterval(stepTimer);
+                addToHistory(jobId, '', '', 'error');
+                setBar('error','❌', d.error||'Failed');
                 document.getElementById('submitBtn').disabled = false;
             }
-        } catch(e) {}
+        } catch(e){}
     }, 4000);
 }
 
-function startStepRotation() {
-    const si = setInterval(() => {
-        stepIdx++;
-        if (stepIdx >= stepMessages.length) { clearInterval(si); return; }
-        document.getElementById('stepsText').textContent = stepMessages[stepIdx];
-    }, 25000);
+function startSteps() {
+    if (stepTimer) clearInterval(stepTimer);
+    stepTimer = setInterval(() => {
+        stepI++;
+        if (stepI >= steps.length) { clearInterval(stepTimer); return; }
+        document.getElementById('stepText').textContent = steps[stepI];
+    }, 20000);
 }
 
 function showVideo(jobId) {
-    const videoUrl = `${API}/burmese-dub-video?job_id=${jobId}`;
-    setStatus('done', '✅', 'Burmese dubbed video ready!');
-    document.getElementById('progressBar').style.display = 'none';
-    document.getElementById('stepsText').textContent = '';
-
-    const player = document.getElementById('videoPlayer');
-    player.src = videoUrl;
-    document.getElementById('videoContainer').style.display = 'block';
-
-    const dlBtn = document.getElementById('downloadBtn');
-    dlBtn.href = videoUrl;
-    dlBtn.download = `burmese_dub_${jobId}.mp4`;
-    document.getElementById('actionBar').style.display = 'flex';
+    const vUrl = `${API}/burmese-dub-video?job_id=${jobId}`;
+    setBar('done','✅','Burmese dubbed video ready!');
+    showProgress(false);
+    document.getElementById('stepText').textContent = '';
+    const p = document.getElementById('player');
+    p.src = vUrl;
+    document.getElementById('vidWrap').style.display = 'block';
+    document.getElementById('dlBtn').href = vUrl;
+    document.getElementById('dlBtn').download = `burmese_dub_${jobId}.mp4`;
+    document.getElementById('actBar').style.display = 'flex';
     document.getElementById('submitBtn').disabled = false;
 }
 
-function setStatus(type, icon, text) {
-    document.getElementById('resultHeader').className = 'result-header ' + type;
-    document.getElementById('resultIcon').textContent = icon;
-    document.getElementById('resultText').textContent = text;
+function setBar(type, icon, msg) {
+    document.getElementById('rBar').className = 'result-bar ' + type;
+    document.getElementById('rIcon').textContent = icon;
+    document.getElementById('rMsg').textContent = msg;
 }
-
+function showProgress(show) { document.getElementById('progBar').style.display = show?'block':'none'; }
+function hidePlayer() {
+    document.getElementById('vidWrap').style.display = 'none';
+    document.getElementById('actBar').style.display = 'none';
+}
 function resetForm() {
-    document.getElementById('resultCard').className = 'result-card';
+    document.getElementById('resultCard').className = 'result';
     document.getElementById('videoUrl').value = '';
-    document.getElementById('videoContainer').style.display = 'none';
-    document.getElementById('actionBar').style.display = 'none';
-    document.getElementById('submitBtn').disabled = false;
+    hidePlayer(); document.getElementById('submitBtn').disabled = false;
     if (pollTimer) clearInterval(pollTimer);
+    if (stepTimer) clearInterval(stepTimer);
 }
+
+// Init
+renderHistory();
 </script>
 </body>
 </html>
