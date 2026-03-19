@@ -120,11 +120,23 @@
 
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
         <div style="font-size:0.85rem;opacity:0.5;margin-bottom:12px;">🎵 Auto-publish to TikTok</div>
-        <a href="tiktok-auth.html" id="tiktokBtn" style="display:inline-block;padding:10px 24px;border-radius:10px;
-            text-decoration:none;font-weight:600;font-size:0.85rem;transition:all 0.2s;
-            background:linear-gradient(135deg,#fe2c55,#ff6b81);color:white;">Connect TikTok</a>
-        <div id="tiktokStatus" style="margin-top:8px;font-size:0.75rem;opacity:0.35;"></div>
+        <div id="tiktokArea"></div>
     </div>
+    <script>
+    // Check TikTok connection from callback redirect
+    (function(){
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get('tiktok')==='connected') {
+            localStorage.setItem('tiktok_connected','true');
+        }
+        const area = document.getElementById('tiktokArea');
+        if(localStorage.getItem('tiktok_connected')==='true') {
+            area.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.25);font-size:0.85rem;"><span>✅</span> TikTok Connected</div><div style="margin-top:8px;"><button onclick="localStorage.removeItem(\x27tiktok_connected\x27);location.reload();" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:0.7rem;cursor:pointer;">Disconnect</button></div>';
+        } else {
+            area.innerHTML = '<a href="tiktok-auth.html" style="display:inline-block;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:0.85rem;background:linear-gradient(135deg,#fe2c55,#ff6b81);color:white;">Connect TikTok</a>';
+        }
+    })();
+    </script>
 
 </div>
 
