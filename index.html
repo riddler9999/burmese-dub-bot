@@ -6,75 +6,115 @@
     <title>Burmese Dub Bot</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; color: #fff; background: #0a0a1a; min-height: 100vh; }
-        .hero { padding: 40px 24px 28px; text-align: center;
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
-        h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px;
-            background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitle { font-size: 0.95rem; opacity: 0.65; margin-bottom: 20px; }
-        .platforms { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
-        .platform { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;color:#fff;background:#0a0a1a;min-height:100vh}
+        .hero{padding:36px 24px 20px;text-align:center;
+            background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%)}
+        h1{font-size:2rem;font-weight:800;margin-bottom:6px;
+            background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .subtitle{font-size:0.9rem;opacity:0.6;margin-bottom:16px}
+        .platforms{display:flex;gap:8px;justify-content:center;margin-bottom:20px;flex-wrap:wrap}
+        .platform{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 14px;font-size:0.8rem}
 
-        .main { max-width: 640px; margin: 0 auto; padding: 0 20px 40px; }
-        .input-row { display: flex; gap: 8px; margin-bottom: 16px; }
-        .input-row input { flex: 1; padding: 13px 16px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.04); color: white; font-size: 0.9rem; font-family: 'Inter', sans-serif;
-            outline: none; transition: border-color 0.2s; }
-        .input-row input:focus { border-color: #f7971e; }
-        .input-row input::placeholder { color: rgba(255,255,255,0.25); }
-        .btn-submit { padding: 13px 24px; border-radius: 10px; border: none; cursor: pointer;
-            font-size: 0.9rem; font-weight: 700; font-family: 'Inter', sans-serif; transition: all 0.2s;
-            background: linear-gradient(135deg, #f7971e, #ffd200); color: #0a0a1a; white-space: nowrap; }
-        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(247,151,30,0.25); }
-        .btn-submit:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+        /* Tabs */
+        .tabs{display:flex;justify-content:center;gap:4px;margin-bottom:0;padding:0 20px}
+        .tab{padding:10px 20px;border-radius:10px 10px 0 0;cursor:pointer;font-size:0.85rem;font-weight:600;
+            background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-bottom:none;transition:all 0.2s;color:rgba(255,255,255,0.5)}
+        .tab.active{background:rgba(255,255,255,0.08);color:#ffd200;border-color:rgba(255,255,255,0.12)}
+        .tab:hover{color:rgba(255,255,255,0.8)}
+        .tab-content{display:none;max-width:640px;margin:0 auto;padding:24px 20px 40px;
+            border:1px solid rgba(255,255,255,0.06);border-top:none;border-radius:0 0 12px 12px;background:rgba(255,255,255,0.02)}
+        .tab-content.active{display:block}
 
-        /* Result card */
-        .result { margin-top: 16px; border-radius: 14px; overflow: hidden; display: none;
-            border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
-        .result.show { display: block; }
-        .result-bar { padding: 14px 18px; display: flex; align-items: center; gap: 10px; font-size: 0.88rem; }
-        .result-bar.processing { background: rgba(247,151,30,0.06); }
-        .result-bar.done { background: rgba(76,175,80,0.06); }
-        .result-bar.error { background: rgba(244,67,54,0.06); }
-        .result-bar .icon { font-size: 1.3rem; }
-        .result-bar .msg { opacity: 0.8; }
-        .prog { height: 2px; background: rgba(255,255,255,0.06); overflow: hidden; }
-        .prog-fill { height: 100%; width: 25%; background: linear-gradient(90deg, #f7971e, #ffd200);
-            animation: sl 2s ease-in-out infinite; }
-        @keyframes sl { 0%{transform:translateX(-100%)} 100%{transform:translateX(500%)} }
-        .step-text { padding: 8px 18px; font-size: 0.75rem; opacity: 0.35; }
-        .vid-wrap { background: #000; }
-        .vid-wrap video { width: 100%; max-height: 65vh; display: block; }
-        .actions { padding: 14px 18px; display: flex; gap: 8px; justify-content: center; }
-        .btn-dl { padding: 9px 18px; border-radius: 8px; text-decoration: none; font-weight: 600;
-            font-size: 0.82rem; background: linear-gradient(135deg, #4caf50, #66bb6a); color: white; border: none; cursor: pointer; }
-        .btn-new { padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: 0.82rem;
-            background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; }
+        .main{max-width:640px;margin:0 auto}
+
+        /* Dub Tab */
+        .input-row{display:flex;gap:8px;margin-bottom:16px}
+        .input-row input{flex:1;padding:13px 16px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);color:white;font-size:0.9rem;font-family:'Inter';outline:none;transition:border-color 0.2s}
+        .input-row input:focus{border-color:#f7971e}
+        .input-row input::placeholder{color:rgba(255,255,255,0.25)}
+        .btn-submit{padding:13px 24px;border-radius:10px;border:none;cursor:pointer;font-size:0.9rem;font-weight:700;
+            font-family:'Inter';transition:all 0.2s;background:linear-gradient(135deg,#f7971e,#ffd200);color:#0a0a1a;white-space:nowrap}
+        .btn-submit:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(247,151,30,0.25)}
+        .btn-submit:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+
+        .result{margin-top:16px;border-radius:14px;overflow:hidden;display:none;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02)}
+        .result.show{display:block}
+        .result-bar{padding:14px 18px;display:flex;align-items:center;gap:10px;font-size:0.88rem}
+        .result-bar.processing{background:rgba(247,151,30,0.06)}
+        .result-bar.done{background:rgba(76,175,80,0.06)}
+        .result-bar.error{background:rgba(244,67,54,0.06)}
+        .prog{height:2px;background:rgba(255,255,255,0.06);overflow:hidden}
+        .prog-fill{height:100%;width:25%;background:linear-gradient(90deg,#f7971e,#ffd200);animation:sl 2s ease-in-out infinite}
+        @keyframes sl{0%{transform:translateX(-100%)}100%{transform:translateX(500%)}}
+        .step-text{padding:8px 18px;font-size:0.75rem;opacity:0.35}
+        .vid-wrap{background:#000}
+        .vid-wrap video{width:100%;max-height:65vh;display:block}
+        .actions{padding:14px 18px;display:flex;gap:8px;justify-content:center}
+        .btn-dl{padding:9px 18px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.82rem;
+            background:linear-gradient(135deg,#4caf50,#66bb6a);color:white;border:none;cursor:pointer}
+        .btn-new{padding:9px 18px;border-radius:8px;font-weight:600;font-size:0.82rem;
+            background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.15);cursor:pointer}
 
         /* History */
-        .history-section { margin-top: 32px; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .history-title { font-size: 0.95rem; font-weight: 700; opacity: 0.9; }
-        .history-clear { font-size: 0.75rem; opacity: 0.4; cursor: pointer; background: none; border: none; color: white; }
-        .history-clear:hover { opacity: 0.7; }
-        .history-list { display: flex; flex-direction: column; gap: 8px; }
-        .history-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px;
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.15s; }
-        .history-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
-        .hi-thumb { width: 48px; height: 48px; border-radius: 8px; background: rgba(255,255,255,0.08);
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
-        .hi-info { flex: 1; min-width: 0; }
-        .hi-platform { font-size: 0.7rem; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.5px; }
-        .hi-url { font-size: 0.8rem; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .hi-time { font-size: 0.7rem; opacity: 0.3; }
-        .hi-status { font-size: 1rem; flex-shrink: 0; }
-        .history-empty { text-align: center; padding: 24px; opacity: 0.25; font-size: 0.85rem; }
+        .history-header{display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px}
+        .history-title{font-size:0.9rem;font-weight:700;opacity:0.8}
+        .history-clear{font-size:0.7rem;opacity:0.3;cursor:pointer;background:none;border:none;color:white}
+        .history-list{display:flex;flex-direction:column;gap:6px}
+        .hi{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;
+            background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:all 0.15s}
+        .hi:hover{background:rgba(255,255,255,0.06)}
+        .hi-icon{font-size:1.1rem;flex-shrink:0}
+        .hi-info{flex:1;min-width:0}
+        .hi-plat{font-size:0.65rem;opacity:0.35;text-transform:uppercase;letter-spacing:0.5px}
+        .hi-url{font-size:0.78rem;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .hi-time{font-size:0.65rem;opacity:0.25}
+        .hi-st{font-size:0.9rem;flex-shrink:0}
+        .empty{text-align:center;padding:30px;opacity:0.25;font-size:0.85rem}
 
-        .footer { text-align: center; padding: 20px; opacity: 0.25; font-size: 0.7rem; }
-        .footer a { color: rgba(255,255,255,0.4); text-decoration: none; margin: 0 6px; }
-        @media (max-width: 500px) { .input-row { flex-direction: column; } h1 { font-size: 1.6rem; } }
+        /* Account Tab */
+        .auth-card{max-width:360px;margin:0 auto;text-align:center}
+        .auth-card h2{font-size:1.2rem;margin-bottom:6px}
+        .auth-card p{font-size:0.82rem;opacity:0.4;margin-bottom:20px}
+        .auth-input{width:100%;padding:12px 16px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);color:white;font-size:0.9rem;font-family:'Inter';outline:none;margin-bottom:8px}
+        .auth-input:focus{border-color:#f7971e}
+        .auth-input::placeholder{color:rgba(255,255,255,0.25)}
+        .btn-auth{width:100%;padding:12px;border-radius:10px;border:none;cursor:pointer;font-size:0.9rem;font-weight:700;
+            font-family:'Inter';background:linear-gradient(135deg,#f7971e,#ffd200);color:#0a0a1a;margin-top:4px}
+        .btn-auth:disabled{opacity:0.35}
+        .auth-switch{margin-top:12px;font-size:0.78rem;opacity:0.4}
+        .auth-switch a{color:#ffd200;cursor:pointer;text-decoration:none}
+        .auth-error{color:#ff6b6b;font-size:0.78rem;margin-top:6px;min-height:18px}
+
+        .profile{text-align:center}
+        .profile-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#302b63,#f7971e);
+            display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 12px;
+            border:3px solid rgba(255,255,255,0.15)}
+        .profile-name{font-size:1.2rem;font-weight:700;margin-bottom:4px}
+        .profile-label{font-size:0.8rem;opacity:0.35;margin-bottom:20px}
+        .profile-stats{display:flex;justify-content:center;gap:30px;margin-bottom:20px}
+        .stat{text-align:center}
+        .stat-num{font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .stat-label{font-size:0.7rem;opacity:0.35}
+        .profile-actions{display:flex;gap:8px;justify-content:center}
+        .btn-sm{padding:8px 16px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;border:none;font-family:'Inter'}
+        .btn-dashboard{background:rgba(247,151,30,0.15);color:#f7971e}
+        .btn-logout{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1)}
+
+        /* TikTok section */
+        .tt-section{margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);text-align:center}
+        .tt-label{font-size:0.8rem;opacity:0.4;margin-bottom:8px}
+        .tt-btn{display:inline-block;padding:9px 20px;border-radius:8px;text-decoration:none;font-weight:600;
+            font-size:0.82rem;background:linear-gradient(135deg,#fe2c55,#ff6b81);color:white}
+        .tt-connected{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:8px;
+            background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.25);font-size:0.82rem}
+        .tt-disconnect{background:none;border:none;color:rgba(255,255,255,0.25);font-size:0.65rem;cursor:pointer;margin-top:4px}
+
+        .footer{text-align:center;padding:20px;opacity:0.2;font-size:0.7rem}
+        .footer a{color:rgba(255,255,255,0.4);text-decoration:none;margin:0 6px}
+        @media(max-width:500px){.input-row{flex-direction:column}h1{font-size:1.6rem}.tabs{gap:2px}.tab{padding:8px 14px;font-size:0.78rem}}
     </style>
 </head>
 <body>
@@ -89,221 +129,216 @@
 </div>
 
 <div class="main">
-    <div class="input-row">
-        <input type="url" id="videoUrl" placeholder="https://youtube.com/shorts/..." autocomplete="off">
-        <button class="btn-submit" id="submitBtn" onclick="submitVideo()">Dub it</button>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('dub')">🎬 Dub</div>
+        <div class="tab" onclick="switchTab('history')">📋 History</div>
+        <div class="tab" onclick="switchTab('account')">👤 Account</div>
     </div>
 
-    <div class="result" id="resultCard">
-        <div class="result-bar processing" id="rBar">
-            <div class="icon" id="rIcon">⏳</div>
-            <div class="msg" id="rMsg">Processing...</div>
+    <!-- DUB TAB -->
+    <div class="tab-content active" id="tab-dub">
+        <div class="input-row">
+            <input type="url" id="videoUrl" placeholder="https://youtube.com/shorts/..." autocomplete="off">
+            <button class="btn-submit" id="submitBtn" onclick="submitVideo()">Dub it</button>
         </div>
-        <div class="prog" id="progBar"><div class="prog-fill"></div></div>
-        <div class="step-text" id="stepText">Downloading video...</div>
-        <div class="vid-wrap" id="vidWrap" style="display:none"><video id="player" controls playsinline></video></div>
-        <div class="actions" id="actBar" style="display:none">
-            <a class="btn-dl" id="dlBtn" download>📥 Download</a>
-            <button class="btn-new" onclick="resetForm()">🔄 New</button>
+        <div class="result" id="resultCard">
+            <div class="result-bar processing" id="rBar">
+                <div id="rIcon">⏳</div><div id="rMsg">Processing...</div>
+            </div>
+            <div class="prog" id="progBar"><div class="prog-fill"></div></div>
+            <div class="step-text" id="stepText">Downloading video...</div>
+            <div class="vid-wrap" id="vidWrap" style="display:none"><video id="player" controls playsinline></video></div>
+            <div class="actions" id="actBar" style="display:none">
+                <a class="btn-dl" id="dlBtn" download>📥 Download</a>
+                <button class="btn-new" onclick="resetForm()">🔄 New</button>
+            </div>
         </div>
     </div>
 
-    <div class="history-section" id="historySection">
+    <!-- HISTORY TAB -->
+    <div class="tab-content" id="tab-history">
         <div class="history-header">
-            <div class="history-title">📋 History</div>
+            <div class="history-title">Recent Dubs</div>
             <button class="history-clear" onclick="clearHistory()">Clear all</button>
         </div>
         <div class="history-list" id="historyList"></div>
     </div>
-</div>
 
-
-    <div style="margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-        <div style="font-size:0.85rem;opacity:0.5;margin-bottom:12px;">🎵 Auto-publish to TikTok</div>
-        <div id="tiktokArea"></div>
+    <!-- ACCOUNT TAB -->
+    <div class="tab-content" id="tab-account">
+        <!-- Not logged in -->
+        <div id="authForm">
+            <div class="auth-card">
+                <h2 id="authTitle">Create Account</h2>
+                <p id="authDesc">Save your dubbed videos and access them anytime</p>
+                <input class="auth-input" id="authUser" placeholder="Username" autocomplete="username">
+                <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password">
+                <button class="btn-auth" id="authBtn" onclick="doAuth()">Create Account</button>
+                <div class="auth-error" id="authError"></div>
+                <div class="auth-switch" id="authSwitch">Already have an account? <a onclick="toggleAuth()">Log in</a></div>
+            </div>
+        </div>
+        <!-- Logged in -->
+        <div id="profileView" style="display:none">
+            <div class="profile">
+                <div class="profile-avatar" id="pAvatar">U</div>
+                <div class="profile-name" id="pName">User</div>
+                <div class="profile-label">Member</div>
+                <div class="profile-stats">
+                    <div class="stat"><div class="stat-num" id="pCount">0</div><div class="stat-label">Videos Dubbed</div></div>
+                </div>
+                <div class="profile-actions">
+                    <a href="./dashboard.html" class="btn-sm btn-dashboard">📊 Dashboard</a>
+                    <button class="btn-sm btn-logout" onclick="logout()">Logout</button>
+                </div>
+            </div>
+            <div class="tt-section">
+                <div class="tt-label">🎵 Auto-publish to TikTok</div>
+                <div id="tiktokArea"></div>
+            </div>
+        </div>
     </div>
-    <script>
-    // Check TikTok connection from callback redirect
-    (function(){
-        const urlParams = new URLSearchParams(window.location.search);
-        if(urlParams.get('tiktok')==='connected') {
-            localStorage.setItem('tiktok_connected','true');
-        }
-        const area = document.getElementById('tiktokArea');
-        if(localStorage.getItem('tiktok_connected')==='true') {
-            area.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.25);font-size:0.85rem;"><span>✅</span> TikTok Connected</div><div style="margin-top:8px;"><button onclick="localStorage.removeItem(\x27tiktok_connected\x27);location.reload();" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:0.7rem;cursor:pointer;">Disconnect</button></div>';
-        } else {
-            area.innerHTML = '<a href="./tiktok-auth.html" style="display:inline-block;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:0.85rem;background:linear-gradient(135deg,#fe2c55,#ff6b81);color:white;">Connect TikTok</a>';
-        }
-    })();
-    </script>
-
 </div>
 
-<div class="footer"><a href="./dashboard.html">Dashboard</a> · <a href="./terms.html">Terms</a> · <a href="./privacy.html">Privacy</a></div>
+<div class="footer">
+    <a href="./dashboard.html">Dashboard</a> · <a href="./terms.html">Terms</a> · <a href="./privacy.html">Privacy</a>
+</div>
 
 <script>
 const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
-let pollTimer = null;
-const steps = ['Downloading video...','Extracting audio...','Transcribing with AI...','Translating to Burmese...','Generating voiceover...','Rendering final video...','Almost done...'];
-let stepI = 0, stepTimer = null;
+let pollTimer=null, stepTimer=null, isLogin=false, stepI=0;
+const steps=['Downloading video...','Extracting audio...','Transcribing with AI...','Translating to Burmese...','Generating voiceover...','Rendering final video...','Almost done...'];
+const platIcons={youtube:'🔴',tiktok:'🎵',xiaohongshu:'📕'};
 
-// === HISTORY (localStorage) ===
-function getHistory() {
-    try { return JSON.parse(localStorage.getItem('dubHistory') || '[]'); } catch(e) { return []; }
-}
-function saveHistory(items) { localStorage.setItem('dubHistory', JSON.stringify(items)); }
-
-function addToHistory(jobId, url, platform, status) {
-    const h = getHistory();
-    const existing = h.findIndex(x => x.jobId === jobId);
-    const entry = { jobId, url, platform, status, time: new Date().toISOString() };
-    if (existing >= 0) h[existing] = entry; else h.unshift(entry);
-    if (h.length > 20) h.length = 20;
-    saveHistory(h);
-    renderHistory();
+// === TABS ===
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['dub','history','account'][i]===name));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    if(name==='history') renderHistory();
+    if(name==='account') checkAuth();
 }
 
-function clearHistory() { saveHistory([]); renderHistory(); }
+// === AUTH ===
+function toggleAuth(){
+    isLogin=!isLogin;
+    document.getElementById('authTitle').textContent=isLogin?'Log In':'Create Account';
+    document.getElementById('authDesc').textContent=isLogin?'Welcome back':'Save your dubbed videos and access them anytime';
+    document.getElementById('authBtn').textContent=isLogin?'Log In':'Create Account';
+    document.getElementById('authSwitch').innerHTML=isLogin?'New here? <a onclick="toggleAuth()">Create account</a>':'Already have an account? <a onclick="toggleAuth()">Log in</a>';
+    document.getElementById('authError').textContent='';
+}
 
-function renderHistory() {
-    const h = getHistory();
-    const list = document.getElementById('historyList');
-    if (h.length === 0) {
-        list.innerHTML = '<div class="history-empty">No history yet</div>';
-        return;
+async function doAuth(){
+    const u=document.getElementById('authUser').value.trim();
+    const p=document.getElementById('authPass').value.trim();
+    if(!u||!p){document.getElementById('authError').textContent='Fill in all fields';return}
+    document.getElementById('authBtn').disabled=true;
+    try{
+        const r=await fetch(`${API}/burmese-dub-auth`,{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:isLogin?'login':'register',username:u,password:p})});
+        const d=await r.json();
+        if(d.status==='success'){
+            localStorage.setItem('dub_token',d.token);localStorage.setItem('dub_user',d.username);
+            checkAuth();
+        } else document.getElementById('authError').textContent=d.message;
+    }catch(e){document.getElementById('authError').textContent='Connection failed'}
+    document.getElementById('authBtn').disabled=false;
+}
+
+function logout(){localStorage.removeItem('dub_token');localStorage.removeItem('dub_user');checkAuth()}
+
+async function checkAuth(){
+    const token=localStorage.getItem('dub_token');
+    const user=localStorage.getItem('dub_user');
+    if(token&&user){
+        document.getElementById('authForm').style.display='none';
+        document.getElementById('profileView').style.display='block';
+        document.getElementById('pAvatar').textContent=user.charAt(0).toUpperCase();
+        document.getElementById('pName').textContent=user;
+        // Get history count
+        try{
+            const r=await fetch(`${API}/burmese-dub-history`,{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({token})});
+            const d=await r.json();
+            if(d.history) document.getElementById('pCount').textContent=d.history.length;
+        }catch(e){}
+        // TikTok status
+        const ttArea=document.getElementById('tiktokArea');
+        if(localStorage.getItem('tiktok_connected')==='true'){
+            ttArea.innerHTML='<div class="tt-connected">✅ TikTok Connected</div><br><button class="tt-disconnect" onclick="localStorage.removeItem(\'tiktok_connected\');checkAuth()">Disconnect</button>';
+        } else {
+            ttArea.innerHTML='<a href="./tiktok-auth.html" class="tt-btn">Connect TikTok</a>';
+        }
+    } else {
+        document.getElementById('authForm').style.display='block';
+        document.getElementById('profileView').style.display='none';
     }
-    const platIcons = { youtube: '🔴', tiktok: '🎵', xiaohongshu: '📕' };
-    const statusIcons = { done: '✅', error: '❌', processing: '⏳' };
-    list.innerHTML = h.map(item => {
-        const icon = platIcons[item.platform] || '🎬';
-        const sIcon = statusIcons[item.status] || '⏳';
-        const ago = timeAgo(item.time);
-        const shortUrl = item.url.replace(/https?:\/\/(www\.)?/, '').substring(0, 45);
-        return `<div class="history-item" onclick="openHistory('${item.jobId}','${item.status}')">
-            <div class="hi-thumb">${icon}</div>
-            <div class="hi-info">
-                <div class="hi-platform">${item.platform}</div>
-                <div class="hi-url">${shortUrl}</div>
-                <div class="hi-time">${ago}</div>
-            </div>
-            <div class="hi-status">${sIcon}</div>
-        </div>`;
-    }).join('');
-}
-
-function openHistory(jobId, status) {
-    if (status === 'done') {
-        showVideo(jobId);
-        document.getElementById('resultCard').className = 'result show';
-    } else if (status === 'processing') {
-        document.getElementById('resultCard').className = 'result show';
-        setBar('processing', '⏳', 'Still processing...');
-        document.getElementById('progBar').style.display = 'block';
-        startPolling(jobId);
-    }
-}
-
-function timeAgo(iso) {
-    const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-    if (s < 60) return 'just now';
-    if (s < 3600) return Math.floor(s/60) + ' min ago';
-    if (s < 86400) return Math.floor(s/3600) + ' hr ago';
-    return Math.floor(s/86400) + ' days ago';
 }
 
 // === SUBMIT ===
-async function submitVideo() {
-    const url = document.getElementById('videoUrl').value.trim();
-    if (!url) return;
-    const btn = document.getElementById('submitBtn');
-    const card = document.getElementById('resultCard');
-    btn.disabled = true;
-    card.className = 'result show';
-    setBar('processing', '⏳', 'Submitting...');
-    showProgress(true); hidePlayer(); stepI = 0;
-
-    try {
-        const resp = await fetch(`${API}/burmese-dub`, {
-            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url})
-        });
-        const data = await resp.json();
-        if (data.status === 'error') { setBar('error','❌',data.message); btn.disabled=false; return; }
-
-        const jobId = data.job_id;
-        addToHistory(jobId, url, data.platform, 'processing');
-        setBar('processing', '⏳', `Processing ${data.platform||'video'}...`);
-        startPolling(jobId);
-        startSteps();
-    } catch(e) { setBar('error','❌','Connection failed.'); btn.disabled=false; }
+async function submitVideo(){
+    const url=document.getElementById('videoUrl').value.trim();
+    if(!url) return;
+    const btn=document.getElementById('submitBtn');
+    const card=document.getElementById('resultCard');
+    btn.disabled=true; card.className='result show';
+    setBar('processing','⏳','Submitting...');
+    showProg(true); hidePlayer(); stepI=0;
+    const token=localStorage.getItem('dub_token')||'';
+    try{
+        const r=await fetch(`${API}/burmese-dub`,{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({url,token})});
+        const d=await r.json();
+        if(d.status==='error'){setBar('error','❌',d.message);btn.disabled=false;return}
+        const jobId=d.job_id;
+        addToHistory(jobId,url,d.platform,'processing');
+        setBar('processing','⏳',`Processing ${d.platform||'video'}...`);
+        startPolling(jobId); startSteps();
+    }catch(e){setBar('error','❌','Connection failed.');btn.disabled=false}
 }
 
-function startPolling(jobId) {
-    let att = 0;
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(async () => {
-        att++;
-        if (att > 150) { clearInterval(pollTimer); setBar('error','❌','Timed out.'); return; }
-        try {
-            const r = await fetch(`${API}/burmese-dub-status?job_id=${jobId}`);
-            const d = await r.json();
-            if (d.status === 'done') {
-                clearInterval(pollTimer); if(stepTimer) clearInterval(stepTimer);
-                addToHistory(jobId, d.source_url||'', d.platform||'', 'done');
-                showVideo(jobId);
-            } else if (d.status === 'error') {
-                clearInterval(pollTimer); if(stepTimer) clearInterval(stepTimer);
-                addToHistory(jobId, '', '', 'error');
-                setBar('error','❌', d.error||'Failed');
-                document.getElementById('submitBtn').disabled = false;
-            }
-        } catch(e){}
-    }, 4000);
+function startPolling(jobId){
+    let att=0;
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer=setInterval(async()=>{
+        att++;if(att>150){clearInterval(pollTimer);setBar('error','❌','Timed out.');return}
+        try{
+            const r=await fetch(`${API}/burmese-dub-status?job_id=${jobId}`);
+            const d=await r.json();
+            if(d.status==='done'){clearInterval(pollTimer);if(stepTimer)clearInterval(stepTimer);
+                addToHistory(jobId,d.source_url||'',d.platform||'','done');showVideo(jobId)}
+            else if(d.status==='error'){clearInterval(pollTimer);if(stepTimer)clearInterval(stepTimer);
+                addToHistory(jobId,'','','error');setBar('error','❌',d.error||'Failed');document.getElementById('submitBtn').disabled=false}
+        }catch(e){}
+    },4000);
 }
 
-function startSteps() {
-    if (stepTimer) clearInterval(stepTimer);
-    stepTimer = setInterval(() => {
-        stepI++;
-        if (stepI >= steps.length) { clearInterval(stepTimer); return; }
-        document.getElementById('stepText').textContent = steps[stepI];
-    }, 20000);
-}
+function startSteps(){if(stepTimer)clearInterval(stepTimer);stepTimer=setInterval(()=>{stepI++;if(stepI>=steps.length){clearInterval(stepTimer);return}document.getElementById('stepText').textContent=steps[stepI]},20000)}
+function showVideo(j){const u=`${API}/burmese-dub-video?job_id=${j}`;setBar('done','✅','Ready!');showProg(false);document.getElementById('stepText').textContent='';document.getElementById('player').src=u;document.getElementById('vidWrap').style.display='block';document.getElementById('dlBtn').href=u;document.getElementById('dlBtn').download=`burmese_dub_${j}.mp4`;document.getElementById('actBar').style.display='flex';document.getElementById('submitBtn').disabled=false}
+function setBar(t,i,m){document.getElementById('rBar').className='result-bar '+t;document.getElementById('rIcon').textContent=i;document.getElementById('rMsg').textContent=m}
+function showProg(s){document.getElementById('progBar').style.display=s?'block':'none'}
+function hidePlayer(){document.getElementById('vidWrap').style.display='none';document.getElementById('actBar').style.display='none'}
+function resetForm(){document.getElementById('resultCard').className='result';document.getElementById('videoUrl').value='';hidePlayer();document.getElementById('submitBtn').disabled=false;if(pollTimer)clearInterval(pollTimer);if(stepTimer)clearInterval(stepTimer)}
 
-function showVideo(jobId) {
-    const vUrl = `${API}/burmese-dub-video?job_id=${jobId}`;
-    setBar('done','✅','Burmese dubbed video ready!');
-    showProgress(false);
-    document.getElementById('stepText').textContent = '';
-    const p = document.getElementById('player');
-    p.src = vUrl;
-    document.getElementById('vidWrap').style.display = 'block';
-    document.getElementById('dlBtn').href = vUrl;
-    document.getElementById('dlBtn').download = `burmese_dub_${jobId}.mp4`;
-    document.getElementById('actBar').style.display = 'flex';
-    document.getElementById('submitBtn').disabled = false;
-}
+// === HISTORY (localStorage) ===
+function getHistory(){try{return JSON.parse(localStorage.getItem('dubHistory')||'[]')}catch(e){return[]}}
+function saveHistory(h){localStorage.setItem('dubHistory',JSON.stringify(h))}
+function addToHistory(jobId,url,platform,status){const h=getHistory();const i=h.findIndex(x=>x.jobId===jobId);const e={jobId,url,platform,status,time:new Date().toISOString()};if(i>=0)h[i]=e;else h.unshift(e);if(h.length>30)h.length=30;saveHistory(h)}
+function clearHistory(){saveHistory([]);renderHistory()}
+function renderHistory(){
+    const h=getHistory(), list=document.getElementById('historyList');
+    if(!h.length){list.innerHTML='<div class="empty">No history yet</div>';return}
+    const si={done:'✅',error:'❌',processing:'⏳'};
+    list.innerHTML=h.map(x=>{const ic=platIcons[x.platform]||'🎬';const t=timeAgo(x.time);const u=(x.url||'').replace(/https?:\/\/(www\.)?/,'').substring(0,45);
+        return`<div class="hi" onclick="openHist('${x.jobId}','${x.status}')"><div class="hi-icon">${ic}</div><div class="hi-info"><div class="hi-plat">${x.platform||'video'}</div><div class="hi-url">${u}</div><div class="hi-time">${t}</div></div><div class="hi-st">${si[x.status]||'⏳'}</div></div>`}).join('')}
+function openHist(j,s){if(s==='done'){switchTab('dub');document.getElementById('resultCard').className='result show';showVideo(j)}}
+function timeAgo(iso){const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 
-function setBar(type, icon, msg) {
-    document.getElementById('rBar').className = 'result-bar ' + type;
-    document.getElementById('rIcon').textContent = icon;
-    document.getElementById('rMsg').textContent = msg;
-}
-function showProgress(show) { document.getElementById('progBar').style.display = show?'block':'none'; }
-function hidePlayer() {
-    document.getElementById('vidWrap').style.display = 'none';
-    document.getElementById('actBar').style.display = 'none';
-}
-function resetForm() {
-    document.getElementById('resultCard').className = 'result';
-    document.getElementById('videoUrl').value = '';
-    hidePlayer(); document.getElementById('submitBtn').disabled = false;
-    if (pollTimer) clearInterval(pollTimer);
-    if (stepTimer) clearInterval(stepTimer);
-}
-
-// Init
-renderHistory();
+// === INIT ===
+const urlP=new URLSearchParams(window.location.search);
+if(urlP.get('tiktok')==='connected')localStorage.setItem('tiktok_connected','true');
+renderHistory(); checkAuth();
 </script>
 </body>
 </html>
