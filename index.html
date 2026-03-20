@@ -130,6 +130,11 @@
         .seo-tags{display:flex;flex-wrap:wrap;gap:4px}
         .seo-tag{padding:3px 8px;border-radius:4px;background:rgba(255,255,255,0.06);font-size:0.7rem;opacity:0.6}
         .seo-copy{padding:3px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);font-size:0.65rem;cursor:pointer;font-family:Inter;margin-left:6px}
+        .hi-check{width:18px;height:18px;border-radius:4px;border:2px solid rgba(255,255,255,0.15);cursor:pointer;
+            flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:none}
+        .hi-check.checked{background:#f7971e;border-color:#f7971e}
+        .hi-check.checked::after{content:'✓';color:#0a0a1a;font-size:0.7rem;font-weight:800}
+        .bulk-progress{margin-top:8px;font-size:0.75rem;opacity:0.5;display:none}
         .footer{text-align:center;padding:20px;opacity:0.2;font-size:0.7rem}
         .footer a{color:rgba(255,255,255,0.4);text-decoration:none;margin:0 6px}
         @media(max-width:500px){
@@ -193,11 +198,20 @@
 
     <!-- HISTORY TAB -->
     <div class="tab-content" id="tab-history">
-        <div class="history-header">
-            <div class="history-title">Recent Dubs</div>
-            <button class="history-clear" onclick="clearHistory()">Clear all</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="history-title">✅ Completed</div>
+            <div style="display:flex;gap:6px">
+                <button class="seo-copy" id="selectAllBtn" onclick="toggleSelectAll()" style="padding:5px 12px">☐ Select All</button>
+                <button class="seo-copy" id="bulkDlBtn" onclick="bulkDownload()" style="padding:5px 12px;display:none">📥 Download Selected</button>
+                <button class="history-clear" onclick="clearHistory()">Clear all</button>
+            </div>
         </div>
-        <div class="history-list" id="historyList"></div>
+        <div class="history-list" id="historyDone"></div>
+
+        <div style="margin-top:20px;margin-bottom:12px" id="errorSection">
+            <div class="history-title">❌ Errors</div>
+        </div>
+        <div class="history-list" id="historyError"></div>
     </div>
 
     <!-- ACCOUNT TAB -->
@@ -386,12 +400,104 @@ function getHistory(){try{return JSON.parse(localStorage.getItem('dubHistory')||
 function saveHistory(h){localStorage.setItem('dubHistory',JSON.stringify(h))}
 function addToHistory(jobId,url,platform,status){const h=getHistory();const i=h.findIndex(x=>x.jobId===jobId);const e={jobId,url,platform,status,time:new Date().toISOString()};if(i>=0)h[i]=e;else h.unshift(e);if(h.length>30)h.length=30;saveHistory(h)}
 function clearHistory(){saveHistory([]);renderHistory()}
+let selectedJobs = new Set();
+let selectAllMode = false;
+
 function renderHistory(){
-    const h=getHistory(), list=document.getElementById('historyList');
-    if(!h.length){list.innerHTML='<div class="empty">No history yet</div>';return}
-    const si={done:'✅',error:'❌',processing:'⏳'};
-    list.innerHTML=h.map(x=>{const ic=platIcons[x.platform]||'🎬';const t=timeAgo(x.time);const u=(x.url||'').replace(/https?:\/\/(www\.)?/,'').substring(0,45);
-        return`<div class="hi" onclick="openHist('${x.jobId}','${x.status}')"><div class="hi-icon">${ic}</div><div class="hi-info"><div class="hi-plat">${x.platform||'video'}</div><div class="hi-url">${u}</div><div class="hi-time">${t}</div></div><div class="hi-st">${si[x.status]||'⏳'}</div></div>`}).join('')}
+    const h=getHistory();
+    const doneList=document.getElementById('historyDone');
+    const errorList=document.getElementById('historyError');
+    const errorSection=document.getElementById('errorSection');
+    
+    const done=h.filter(x=>x.status==='done');
+    const errors=h.filter(x=>x.status==='error');
+    const processing=h.filter(x=>x.status==='processing');
+    
+    if(!done.length){
+        doneList.innerHTML='<div class="empty">No completed videos yet</div>';
+    } else {
+        doneList.innerHTML=done.map(x=>{
+            const ic=platIcons[x.platform]||'🎬';
+            const t=timeAgo(x.time);
+            const u=(x.url||'').replace(/https?:\/\/(www\.)?/,'').substring(0,40);
+            const checked=selectedJobs.has(x.jobId)?'checked':'';
+            return '<div class="hi"><div class="hi-check '+checked+'" onclick="event.stopPropagation();toggleSelect(\''+x.jobId+'\')"></div><div class="hi-icon">'+ic+'</div><div class="hi-info" onclick="openHist(\''+x.jobId+'\',\'done\')"><div class="hi-plat">'+( x.platform||'video')+'</div><div class="hi-url">'+u+'</div><div class="hi-time">'+t+'</div></div><div class="hi-st">✅</div></div>';
+        }).join('');
+    }
+    
+    if(!errors.length && !processing.length){
+        errorSection.style.display='none';
+        errorList.innerHTML='';
+    } else {
+        errorSection.style.display='block';
+        const all=[...processing,...errors];
+        errorList.innerHTML=all.map(x=>{
+            const ic=platIcons[x.platform]||'🎬';
+            const t=timeAgo(x.time);
+            const u=(x.url||'').replace(/https?:\/\/(www\.)?/,'').substring(0,40);
+            const si=x.status==='processing'?'⏳':'❌';
+            return '<div class="hi"><div class="hi-icon">'+ic+'</div><div class="hi-info"><div class="hi-plat">'+(x.platform||'video')+'</div><div class="hi-url">'+u+'</div><div class="hi-time">'+t+'</div></div><div class="hi-st">'+si+'</div></div>';
+        }).join('');
+    }
+    
+    updateBulkBtn();
+}
+
+function toggleSelect(jobId){
+    if(selectedJobs.has(jobId)) selectedJobs.delete(jobId);
+    else selectedJobs.add(jobId);
+    renderHistory();
+}
+
+function toggleSelectAll(){
+    const done=getHistory().filter(x=>x.status==='done');
+    if(selectAllMode){
+        selectedJobs.clear();
+        selectAllMode=false;
+    } else {
+        done.forEach(x=>selectedJobs.add(x.jobId));
+        selectAllMode=true;
+    }
+    renderHistory();
+}
+
+function updateBulkBtn(){
+    const btn=document.getElementById('bulkDlBtn');
+    const selBtn=document.getElementById('selectAllBtn');
+    if(selectedJobs.size>0){
+        btn.style.display='inline-block';
+        btn.textContent='📥 Download '+selectedJobs.size+' video'+(selectedJobs.size>1?'s':'');
+    } else {
+        btn.style.display='none';
+    }
+    selBtn.textContent=selectAllMode?'☑ Deselect All':'☐ Select All';
+}
+
+async function bulkDownload(){
+    const jobs=[...selectedJobs];
+    const btn=document.getElementById('bulkDlBtn');
+    btn.disabled=true;
+    btn.textContent='📥 Downloading...';
+    
+    for(let i=0;i<jobs.length;i++){
+        btn.textContent='📥 Downloading '+(i+1)+'/'+jobs.length+'...';
+        const url=API+'/burmese-dub-video?job_id='+jobs[i];
+        try{
+            const resp=await fetch(url);
+            const blob=await resp.blob();
+            const a=document.createElement('a');
+            a.href=URL.createObjectURL(blob);
+            a.download='burmese_dub_'+jobs[i]+'.mp4';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            await new Promise(r=>setTimeout(r,1000));
+        }catch(e){console.error('Download failed:',jobs[i])}
+    }
+    
+    btn.disabled=false;
+    btn.textContent='📥 Done!';
+    setTimeout(function(){updateBulkBtn()},2000);
+}
 function openHist(j,s){if(s==='done'){switchTab('dub');document.getElementById('resultCard').className='result show';showVideo(j)}}
 function timeAgo(iso){const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 
