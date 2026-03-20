@@ -120,6 +120,16 @@
             background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.25);font-size:0.82rem}
         .tt-disconnect{background:none;border:none;color:rgba(255,255,255,0.25);font-size:0.65rem;cursor:pointer;margin-top:4px}
 
+        .seo-card{margin-top:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);overflow:hidden}
+        .seo-header{padding:10px 14px;font-size:0.8rem;font-weight:700;opacity:0.6;cursor:pointer;display:flex;justify-content:space-between}
+        .seo-body{padding:0 14px 14px;display:none;font-size:0.78rem}
+        .seo-body.show{display:block}
+        .seo-row{margin-bottom:10px}
+        .seo-label{font-size:0.65rem;opacity:0.35;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
+        .seo-val{opacity:0.75;line-height:1.5}
+        .seo-tags{display:flex;flex-wrap:wrap;gap:4px}
+        .seo-tag{padding:3px 8px;border-radius:4px;background:rgba(255,255,255,0.06);font-size:0.7rem;opacity:0.6}
+        .seo-copy{padding:3px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.4);font-size:0.65rem;cursor:pointer;font-family:Inter;margin-left:6px}
         .footer{text-align:center;padding:20px;opacity:0.2;font-size:0.7rem}
         .footer a{color:rgba(255,255,255,0.4);text-decoration:none;margin:0 6px}
         @media(max-width:500px){
@@ -173,6 +183,10 @@
             <div class="actions" id="actBar" style="display:none">
                 <a class="btn-dl" id="dlBtn" download>📥 Download</a>
                 <button class="btn-new" onclick="resetForm()">🔄 New</button>
+            </div>
+        <div class="seo-card" id="seoCard" style="display:none">
+                <div class="seo-header" onclick="toggleSeo()">📋 SEO Metadata <span id="seoArrow">▼</span></div>
+                <div class="seo-body" id="seoBody"></div>
             </div>
         </div>
     </div>
@@ -228,6 +242,24 @@
 
 <script>
 const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
+function toggleSeo(){var b=document.getElementById('seoBody');b.classList.toggle('show');document.getElementById('seoArrow').textContent=b.classList.contains('show')?'\u25B2':'\u25BC'}
+function copySeo(text){navigator.clipboard.writeText(text).then(function(){}).catch(function(){})}
+function showSeo(seo){
+    var c=document.getElementById('seoCard');
+    if(!seo||!seo.title){c.style.display='none';return}
+    c.style.display='block';
+    var b=document.getElementById('seoBody');
+    var h='';
+    if(seo.title) h+='<div class="seo-row"><div class="seo-label">Title</div><div class="seo-val">'+seo.title+' <button class="seo-copy" onclick="copySeo(this.parentElement.textContent.trim())">Copy</button></div></div>';
+    if(seo.description) h+='<div class="seo-row"><div class="seo-label">Description</div><div class="seo-val">'+seo.description+' <button class="seo-copy" onclick="copySeo(this.parentElement.textContent.trim())">Copy</button></div></div>';
+    if(seo.hashtags&&seo.hashtags.length) h+='<div class="seo-row"><div class="seo-label">Hashtags</div><div class="seo-tags">'+seo.hashtags.map(function(t){return '<span class="seo-tag">'+t+'</span>'}).join('')+'</div><button class="seo-copy" onclick="copySeo(\''+seo.hashtags.join(' ')+'\')">Copy All</button></div>';
+    if(seo.youtube) h+='<div class="seo-row"><div class="seo-label">YouTube Title</div><div class="seo-val">'+seo.youtube.title+' <button class="seo-copy" onclick="copySeo(this.parentElement.textContent.trim())">Copy</button></div></div>';
+    if(seo.youtube&&seo.youtube.description) h+='<div class="seo-row"><div class="seo-label">YouTube Description</div><div class="seo-val" style="font-size:0.72rem;white-space:pre-wrap">'+seo.youtube.description+' <button class="seo-copy" onclick="copySeo(this.parentElement.textContent.trim())">Copy</button></div></div>';
+    if(seo.tiktok) h+='<div class="seo-row"><div class="seo-label">TikTok Caption</div><div class="seo-val">'+seo.tiktok.caption+' <button class="seo-copy" onclick="copySeo(this.parentElement.textContent.trim())">Copy</button></div></div>';
+    if(seo.facebook) h+='<div class="seo-row"><div class="seo-label">Facebook Post</div><div class="seo-val">'+seo.facebook.text+' <button class="seo-copy" onclick="copySeo(this.parentElement.textContent.trim())">Copy</button></div></div>';
+    b.innerHTML=h;
+}
+
 let selectedLang = 'my';
 function setLang(l) {
     selectedLang = l;
@@ -334,7 +366,7 @@ function startPolling(jobId){
         try{
             const r=await fetch(`${API}/burmese-dub-status?job_id=${jobId}`);
             const d=await r.json();
-            if(d.status==='done'){clearInterval(pollTimer);if(stepTimer)clearInterval(stepTimer);
+            if(d.status==='done'){clearInterval(pollTimer);if(stepTimer)clearInterval(stepTimer);if(d.seo)showSeo(d.seo);
                 addToHistory(jobId,d.source_url||'',d.platform||'','done');showVideo(jobId)}
             else if(d.status==='error'){clearInterval(pollTimer);if(stepTimer)clearInterval(stepTimer);
                 addToHistory(jobId,'','','error');setBar('error','❌',d.error||'Failed');document.getElementById('submitBtn').disabled=false}
