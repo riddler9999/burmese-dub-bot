@@ -29,6 +29,14 @@
         .main{max-width:640px;margin:0 auto}
 
         /* Dub Tab */
+        
+        .lang-row{display:flex;gap:6px;margin-bottom:12px;justify-content:center;flex-wrap:wrap}
+        .lang-btn{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600;
+            background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);
+            transition:all 0.15s;font-family:'Inter'}
+        .lang-btn.active{border-color:#f7971e;color:#ffd200;background:rgba(247,151,30,0.1)}
+        .lang-btn:hover{border-color:rgba(255,255,255,0.2)}
+
         .input-row{display:flex;gap:8px;margin-bottom:16px}
         .input-row input{flex:1;padding:13px 16px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);
             background:rgba(255,255,255,0.04);color:white;font-size:0.9rem;font-family:'Inter';outline:none;transition:border-color 0.2s}
@@ -114,13 +122,21 @@
 
         .footer{text-align:center;padding:20px;opacity:0.2;font-size:0.7rem}
         .footer a{color:rgba(255,255,255,0.4);text-decoration:none;margin:0 6px}
-        @media(max-width:500px){.input-row{flex-direction:column}h1{font-size:1.6rem}.tabs{gap:2px}.tab{padding:8px 14px;font-size:0.78rem}}
+        @media(max-width:500px){
+        .lang-row{display:flex;gap:6px;margin-bottom:12px;justify-content:center;flex-wrap:wrap}
+        .lang-btn{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600;
+            background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);
+            transition:all 0.15s;font-family:'Inter'}
+        .lang-btn.active{border-color:#f7971e;color:#ffd200;background:rgba(247,151,30,0.1)}
+        .lang-btn:hover{border-color:rgba(255,255,255,0.2)}
+
+        .input-row{flex-direction:column}h1{font-size:1.6rem}.tabs{gap:2px}.tab{padding:8px 14px;font-size:0.78rem}}
     </style>
 </head>
 <body>
 <div class="hero">
     <h1>🎙️ Burmese Dub Bot</h1>
-    <p class="subtitle">Paste a video link — get a Burmese-dubbed version</p>
+    <p class="subtitle">Paste a video link — dub it in any language</p>
     <div class="platforms">
         <div class="platform">🔴 YouTube</div>
         <div class="platform">🎵 TikTok</div>
@@ -137,6 +153,12 @@
 
     <!-- DUB TAB -->
     <div class="tab-content active" id="tab-dub">
+        <div class="lang-row" id="langRow">
+            <button class="lang-btn active" onclick="setLang('my')" id="lang-my">🇲🇲 Burmese</button>
+            <button class="lang-btn" onclick="setLang('en')" id="lang-en">🇺🇸 English</button>
+            <button class="lang-btn" onclick="setLang('ja')" id="lang-ja">🇯🇵 Japanese</button>
+            <button class="lang-btn" onclick="setLang('ko')" id="lang-ko">🇰🇷 Korean</button>
+        </div>
         <div class="input-row">
             <input type="url" id="videoUrl" placeholder="https://youtube.com/shorts/..." autocomplete="off">
             <button class="btn-submit" id="submitBtn" onclick="submitVideo()">Dub it</button>
@@ -206,6 +228,12 @@
 
 <script>
 const API = 'https://n8n.srv1235044.hstgr.cloud/webhook';
+let selectedLang = 'my';
+function setLang(l) {
+    selectedLang = l;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('lang-' + l).classList.add('active');
+}
 let pollTimer=null, stepTimer=null, isLogin=false, stepI=0;
 const steps=['Downloading video...','Extracting audio...','Transcribing with AI...','Translating to Burmese...','Generating voiceover...','Rendering final video...','Almost done...'];
 const platIcons={youtube:'🔴',tiktok:'🎵',xiaohongshu:'📕'};
@@ -288,12 +316,12 @@ async function submitVideo(){
     const token=localStorage.getItem('dub_token')||'';
     try{
         const r=await fetch(`${API}/burmese-dub`,{method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({url,token})});
+            body:JSON.stringify({url,token,lang:selectedLang})});
         const d=await r.json();
         if(d.status==='error'){setBar('error','❌',d.message);btn.disabled=false;return}
         const jobId=d.job_id;
         addToHistory(jobId,url,d.platform,'processing');
-        setBar('processing','⏳',`Processing ${d.platform||'video'}...`);
+        setBar('processing','⏳',`Processing ${d.platform||'video'} → ${d.lang||selectedLang}...`);
         startPolling(jobId); startSteps();
     }catch(e){setBar('error','❌','Connection failed.');btn.disabled=false}
 }
