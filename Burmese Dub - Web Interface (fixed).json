@@ -1,0 +1,1662 @@
+{
+  "name": "Burmese Dub - Web Interface",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "burmese-dub",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://riddler9999.github.io"
+        }
+      },
+      "id": "webhook_trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1200,
+        128
+      ],
+      "webhookId": "burmese-dub-web",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst rawUrl = String(body.url || '').trim();\nconst requestedLang = String(body.lang || 'my').trim().toLowerCase();\nconst rawToken = String(body.token || '').trim();\nconst rawJobId = String(body.job_id || body.jobId || body.chatId || Date.now()).trim();\n\nconst voiceMap = {\n  my: { voice: 'my-MM-ThihaNeural', name: 'Burmese' },\n  en: { voice: 'en-US-ChristopherNeural', name: 'English' },\n  ja: { voice: 'ja-JP-KeitaNeural', name: 'Japanese' },\n  ko: { voice: 'ko-KR-InJoonNeural', name: 'Korean' },\n};\n\nconst safeJobId = (rawJobId.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) || String(Date.now()));\nconst userToken = rawToken.replace(/[\\r\\n\\0]/g, '').slice(0, 1024);\nconst lang = Object.prototype.hasOwnProperty.call(voiceMap, requestedLang) ? requestedLang : 'my';\nconst voice = voiceMap[lang];\n\nconst urlMatch = rawUrl.match(/^(https?:\\/\\/(?:www\\.)?(?:youtube\\.com|youtu\\.be|(?:www\\.)?tiktok\\.com|vm\\.tiktok\\.com|vt\\.tiktok\\.com|(?:www\\.)?xiaohongshu\\.com|xhslink\\.com)\\/[^\\s]+)$/i);\nif (!urlMatch) {\n  return [{ json: { valid: false, error: 'Invalid URL. Supported: YouTube, TikTok, Xiaohongshu' } }];\n}\n\nconst url = urlMatch[1];\nlet platform = 'unknown';\nif (/youtube\\.com|youtu\\.be/i.test(url)) platform = 'youtube';\nelse if (/tiktok\\.com/i.test(url)) platform = 'tiktok';\nelse if (/xiaohongshu\\.com|xhslink\\.com/i.test(url)) platform = 'xiaohongshu';\n\nreturn [{\n  json: {\n    valid: true,\n    url,\n    source_url: url,\n    platform,\n    userToken,\n    token_present: !!userToken,\n    job_id: safeJobId,\n    chatId: safeJobId,\n    work_dir: '/media/dub/' + safeJobId,\n    lang,\n    lang_name: voice.name,\n    vo_voice: voice.voice,\n    vo_rate: '+18%',\n    vo_pitch: '+0Hz',\n    updated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "validate_url",
+      "name": "Validate URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        128
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if_valid",
+      "name": "IF Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -720,
+        128
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'error', message: $json.error }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond_error",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1200,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'processing', stage: 'queued', message: 'Video is being processed.', url: $json.url, platform: $json.platform, lang: $json.lang_name, job_id: $json.job_id, error_message: null, updated_at: $json.updated_at || new Date().toISOString() }) }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "respond_accepted",
+      "name": "Respond Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -512,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=CHAT_ID=\"{{ $('Validate URL').first().json.chatId }}\"\nPLATFORM=\"{{ $('Validate URL').first().json.platform }}\"\nURL=\"{{ $('Validate URL').first().json.url }}\"\nWD=\"{{ $('Validate URL').first().json.work_dir }}\"\nmkdir -p /media/dub/web_status\ncat > \"/media/dub/web_status/${CHAT_ID}.json\" <<JSON\n{\"job_id\":\"${CHAT_ID}\",\"status\":\"processing\",\"stage\":\"downloading\",\"error_message\":null,\"updated_at\":\"$(date -Iseconds)\",\"url\":\"${URL}\",\"platform\":\"${PLATFORM}\"}\nJSON\nmkdir -p \"$WD\"\n\nrun_cmd() {\n  if command -v timeout >/dev/null 2>&1; then\n    timeout -k 20 300 \"$@\"\n  else\n    \"$@\"\n  fi\n}\n\nYT=\"\"\nfor candidate in /usr/local/bin/yt-dlp-latest /usr/local/bin/yt-dlp $(command -v yt-dlp 2>/dev/null); do\n  if [ -n \"$candidate\" ] && [ -x \"$candidate\" ]; then\n    YT=\"$candidate\"\n    break\n  fi\ndone\n\nif [ -z \"$YT\" ]; then\n  if command -v curl >/dev/null 2>&1; then\n    curl --connect-timeout 10 --max-time 60 -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp-latest || true\n    chmod +x /usr/local/bin/yt-dlp-latest 2>/dev/null || true\n    [ -x /usr/local/bin/yt-dlp-latest ] && YT=/usr/local/bin/yt-dlp-latest\n  fi\nfi\n\nif [ -z \"$YT\" ]; then\n  echo \"ERROR: yt-dlp binary not available\"\n  exit 1\nfi\n\necho \"YT_DLP_BIN=$YT\"\n$YT --version 2>/dev/null || true\nCOOKIES=\"/media/dub/cookies.txt\"\nCOMMON_OUT=(-o \"$WD/source.%(ext)s\" --merge-output-format mp4)\nSUBS=(--write-auto-sub --sub-lang en --convert-subs srt)\n\ncase \"$PLATFORM\" in\n  youtube)\n    if [ -f \"$COOKIES\" ]; then\n      run_cmd \"$YT\" --js-runtimes deno --remote-components ejs:github --cookies \"$COOKIES\" --extractor-args \"youtube:player_client=web\" -f \"bv[height>=1080]+ba/bv[height>=720]+ba/bv*+ba/b\" --format-sort \"res:1080,ext:mp4:m4a\" \"${SUBS[@]}\" \"${COMMON_OUT[@]}\" \"$URL\" 2>&1\n    fi\n    if [ ! -f \"$WD/source.mp4\" ]; then\n      run_cmd \"$YT\" --js-runtimes deno --remote-components ejs:github --extractor-args \"youtube:player_client=web\" -f \"bv*+ba/b\" --format-sort \"res:1080,ext:mp4:m4a\" \"${SUBS[@]}\" \"${COMMON_OUT[@]}\" \"$URL\" 2>&1\n    fi\n    if [ ! -f \"$WD/source.mp4\" ]; then\n      run_cmd \"$YT\" --js-runtimes deno --remote-components ejs:github --extractor-args \"youtube:player_client=ios\" -f \"bv*+ba/b\" --format-sort \"res:1080,ext:mp4:m4a\" \"${SUBS[@]}\" \"${COMMON_OUT[@]}\" \"$URL\" 2>&1\n    fi\n    ;;\n  tiktok)\n    run_cmd \"$YT\" -f \"best[ext=mp4]/best\" --format-sort \"res:1080\" \"${COMMON_OUT[@]}\" \"$URL\" 2>&1\n    if [ ! -f \"$WD/source.mp4\" ]; then\n      run_cmd \"$YT\" --user-agent \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1\" -f \"best\" \"${COMMON_OUT[@]}\" \"$URL\" 2>&1\n    fi\n    ;;\n  xiaohongshu)\n    run_cmd \"$YT\" -f \"best\" \"${COMMON_OUT[@]}\" \"$URL\" 2>&1\n    if [ ! -f \"$WD/source.mp4\" ]; then\n      run_cmd \"$YT\" --user-agent \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\" -f \"best\" \"${COMMON_OUT[@]}\" \"$URL\" 2>&1\n    fi\n    ;;\n  *)\n    echo \"ERROR: Unsupported platform: $PLATFORM\"\n    exit 1\n    ;;\nesac\n\nif [ ! -f \"$WD/source.mp4\" ]; then\n  OTHER=$(find \"$WD\" -maxdepth 1 -type f \\( -name \"*.webm\" -o -name \"*.mkv\" -o -name \"*.mp4.*\" \\) | head -1)\n  [ -n \"$OTHER\" ] && ffmpeg -y -i \"$OTHER\" -c copy \"$WD/source.mp4\" 2>&1 && rm -f \"$OTHER\"\nfi\nif [ ! -f \"$WD/source.mp4\" ]; then\n  echo \"ERROR: source.mp4 not found\"\n  ls -lh \"$WD/\"\n  exit 1\nfi\nWIDTH=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 \"$WD/source.mp4\" 2>/dev/null)\nHEIGHT=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 \"$WD/source.mp4\" 2>/dev/null)\nDURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 \"$WD/source.mp4\" 2>/dev/null)\necho \"RESOLUTION=${WIDTH}x${HEIGHT}\"\necho \"DURATION=${DURATION}\"\necho \"PLATFORM=${PLATFORM}\"\nSRT_FILE=$(find \"$WD\" -name \"*.srt\" 2>/dev/null | head -1)\nif [ -n \"$SRT_FILE\" ]; then cp \"$SRT_FILE\" \"$WD/source.srt\"; echo \"SRT_FOUND=true\"; else echo \"SRT_FOUND=false\"; fi\nls -lh \"$WD/\""
+      },
+      "id": "web_download",
+      "name": "Download Video",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        112
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $input.first().json.stdout || '';\nconst config = $('Validate URL').first().json;\n\nif (\n  stdout.includes('ERROR: source.mp4 not found') ||\n  stdout.includes('Sign in to confirm you') ||\n  stdout.includes('HTTP Error 403') ||\n  (!stdout.includes('RESOLUTION=') && !stdout.includes('source.mp4'))\n) {\n  const errLines = stdout.split('\\n').filter((line) => line.includes('ERROR')).join(' | ');\n  throw new Error('Download failed: ' + (errLines || 'source.mp4 was not created. Check cookies or URL.'));\n}\n\nconst resMatch = stdout.match(/RESOLUTION=(\\d+)x(\\d+)/);\nconst width = resMatch ? parseInt(resMatch[1], 10) : 1080;\nconst height = resMatch ? parseInt(resMatch[2], 10) : 1920;\nconst durMatch = stdout.match(/DURATION=([\\d.]+)/);\nconst duration = durMatch ? parseFloat(durMatch[1]) : 60;\nconst ar = width / height;\nlet blurH;\nif (ar < 0.7) blurH = Math.round(height * 0.22);\nelse if (ar > 1.2) blurH = Math.round(height * 0.18);\nelse blurH = Math.round(height * 0.2);\nconst blurY = height - blurH;\n\nreturn [{\n  json: {\n    job_id: config.job_id,\n    work_dir: config.work_dir,\n    url: config.url,\n    source_url: config.url,\n    youtube_url: config.url,\n    platform: config.platform,\n    lang: config.lang,\n    lang_name: config.lang_name,\n    vo_voice: config.vo_voice,\n    vo_rate: config.vo_rate,\n    vo_pitch: config.vo_pitch,\n    width,\n    height,\n    duration,\n    blur_y: blurY,\n    blur_h: blurH,\n    updated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "web_parse",
+      "name": "Parse Video Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        112
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=WD=\"{{$('Validate URL').first().json.work_dir}}\"\nJOB_ID=\"{{$('Validate URL').first().json.job_id}}\"\nexport JOB_ID\nmkdir -p /media/dub/web_status\npython3 - <<'PY'\nimport json, os, datetime\nwith open(f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\", 'w', encoding='utf-8') as f:\n    json.dump({'job_id': os.environ['JOB_ID'], 'status': 'processing', 'stage': 'transcribing', 'error_message': None, 'updated_at': datetime.datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)\nPY\n\necho \"=== Extracting audio ===\"\nffmpeg -y -i \"$WD/source.mp4\" -vn -acodec pcm_s16le -ar 16000 -ac 1 \"$WD/audio.wav\" 2>&1\n\nif ! which whisper > /dev/null 2>&1; then\n  pip install -U openai-whisper --break-system-packages 2>&1 | tail -3\nfi\nMODEL=\"small\"\nWHISPER_CACHE=\"${HOME}/.cache/whisper\"\nif [ -f \"$WHISPER_CACHE/large-v3.pt\" ]; then MODEL=\"large-v3\"; elif [ -f \"$WHISPER_CACHE/medium.pt\" ]; then MODEL=\"medium\"; fi\nwhisper \"$WD/audio.wav\" --model \"$MODEL\" --output_dir \"$WD\" --output_format all --word_timestamps True 2>&1\nif [ ! -f \"$WHISPER_CACHE/large-v3.pt\" ]; then nohup python3 -c \"import whisper; whisper.load_model('large-v3')\" > /dev/null 2>&1 & fi\nSRT_FILE=\"$WD/audio.srt\"\nif [ -s \"$SRT_FILE\" ]; then\n  python3 -c \"import re\ncorrections={'[音乐]':'','[Music]':'','[music]':'','[Applause]':'','[applause]':'','[Laughter]':'','[laughter]':'','♪':'','♫':''}\ncontent=open('$SRT_FILE','r',encoding='utf-8').read()\nfor wrong,right in corrections.items(): content=content.replace(wrong,right)\nblocks=content.strip().split('\\n\\n')\nclean=[]\nfor block in blocks:\n lines=block.strip().split('\\n')\n if len(lines)>=3:\n  text='\\n'.join(lines[2:]).strip()\n  if text: clean.append(block)\n elif len(lines)>=2:\n  clean.append(block)\nopen('$SRT_FILE','w',encoding='utf-8').write('\\n\\n'.join(clean))\nprint('Dictionary correction applied')\" 2>&1\n  echo \"=== TRANSCRIPT_START ===\"\n  cat \"$SRT_FILE\"\n  echo \"\"\n  echo \"=== TRANSCRIPT_END ===\"\nelse\n  echo \"SRT_FOUND=false\"\n  echo \"ERROR: No transcript output from Whisper\"\nfi\nls -la \"$WD/\"\necho \"DONE_TRANSCRIBE\""
+      },
+      "id": "web_transcribe",
+      "name": "Extract Audio & Transcribe",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        176,
+        112
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $input.first().json.stdout || '';\n\nconst startMarker = '=== TRANSCRIPT_START ===';\nconst endMarker = '=== TRANSCRIPT_END ===';\nconst startIdx = stdout.indexOf(startMarker);\nconst endIdx = stdout.indexOf(endMarker);\n\nlet srtRaw = '';\nif (startIdx !== -1 && endIdx !== -1) {\n  srtRaw = stdout.substring(startIdx + startMarker.length, endIdx).trim();\n}\n\nif (!srtRaw || srtRaw.length < 5) {\n  const detected = stdout.match(/Detected language: (\\w+)/);\n  const lang = detected ? detected[1] : 'unknown';\n  throw new Error(\n    'ဘီဒီယိုထဲမှာ စကားပြောသံ မတွေ့ရပါ (Detected: ' + lang + ')။ ' +\n    'စကားပြောပါတဲ့ ဗီဒီယို ထပ်ပို့ကြည့်ပါ။'\n  );\n}\n\n// Parse SRT into structured blocks\nconst blocks = srtRaw.split(/\\n\\n+/).filter(b => b.trim());\nconst timestamps = [];\nconst texts = [];\n\nfor (const block of blocks) {\n  const lines = block.trim().split('\\n');\n  if (lines.length < 2) continue;\n  \n  let tsLine = -1;\n  let idLine = -1;\n  for (let i = 0; i < lines.length; i++) {\n    if (/^\\d+$/.test(lines[i].trim())) idLine = i;\n    if (/\\d{2}:\\d{2}:\\d{2}[,.]\\d{3}\\s*-->\\s*\\d{2}:\\d{2}:\\d{2}[,.]\\d{3}/.test(lines[i])) {\n      tsLine = i;\n      break;\n    }\n  }\n  if (tsLine < 0) continue;\n  \n  const id = idLine >= 0 ? lines[idLine].trim() : String(timestamps.length + 1);\n  const ts = lines[tsLine].trim();\n  const text = lines.slice(tsLine + 1).join(' ').replace(/<[^>]+>/g, '').trim();\n  \n  if (!text) continue;\n  \n  timestamps.push({ id, ts });\n  texts.push(text);\n}\n\nif (texts.length === 0) {\n  throw new Error('SRT parsing failed: no subtitle blocks found');\n}\n\nreturn [{\n  json: {\n    timestamps,\n    texts,\n    block_count: texts.length,\n    texts_json: JSON.stringify(texts),\n    transcript: srtRaw\n  }\n}];"
+      },
+      "id": "web_parse_transcript",
+      "name": "Parse Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        112
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=SYSTEM: You are a dubbing translator and SEO expert. Return ONLY valid JSON. No markdown fences, no explanation.\n\nTARGET LANGUAGE: {{ $('Validate URL').first().json.lang_name }}\n\nTASK 1 - DUBBING-AWARE TRANSLATION:\nYou receive a JSON array of subtitle texts. Return a JSON array of translations with EXACTLY the same length.\n\nRULES:\n- Output array length MUST EXACTLY match input array length.\n- Translate for SPOKEN dubbing, not literal subtitles.\n- Prefer short, natural, everyday phrasing.\n- Keep each line similar or shorter in spoken duration than the original.\n- Avoid formal or wordy phrasing unless the original is formal.\n- Avoid filler words, repeated honorifics, and unnecessary particles.\n- Do NOT merge or skip lines.\n- If a line would sound too long, shorten it while preserving meaning.\n- Keep numbers, brand names, and proper nouns understandable when spoken.\n\nTASK 2 - SEO METADATA:\nGenerate SEO metadata in {{ $('Validate URL').first().json.lang_name }}.\n\nRETURN THIS EXACT JSON STRUCTURE:\n{\"translated_texts\":[\"line1\",\"line2\"],\"seo\":{\"title\":\"SEO title (60 chars max)\",\"description\":\"SEO description (160 chars max)\",\"tags\":[\"tag1\",\"tag2\",\"tag3\",\"tag4\",\"tag5\"],\"hashtags\":[\"#hashtag1\",\"#hashtag2\",\"#hashtag3\",\"#hashtag4\",\"#hashtag5\"],\"youtube\":{\"title\":\"YouTube title\",\"description\":\"YouTube description (500 chars max)\",\"tags\":[\"yt1\",\"yt2\",\"yt3\"]},\"tiktok\":{\"caption\":\"TikTok caption with hashtags (150 chars max)\"},\"facebook\":{\"text\":\"Facebook post (250 chars max)\"}}}\n\nSUBTITLE TEXTS TO TRANSLATE ({{ $json.block_count }} lines):\n{{ $json.texts_json }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "web_gemini",
+      "name": "Gemini Translate",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        352
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "sebrjof7UZvkCMX6",
+          "name": "Uuiroe"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiOut = $input.first().json;\nconst parseOut = $('Parse Transcript').first().json;\nconst info = $('Parse Video Info').first().json;\n\nlet rawText = '';\nif (typeof geminiOut.text === 'string') rawText = geminiOut.text.trim();\nelse if (geminiOut.content?.parts?.[0]?.text) rawText = geminiOut.content.parts[0].text.trim();\nelse if (geminiOut.candidates?.[0]?.content?.parts?.[0]?.text) rawText = geminiOut.candidates[0].content.parts[0].text.trim();\nelse rawText = JSON.stringify(geminiOut);\nif (geminiOut.error) {\n  throw new Error('Gemini error: ' + JSON.stringify(geminiOut.error).substring(0, 300));\n}\nrawText = rawText.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\nlet translatedTexts;\nlet seo = {};\ntry {\n  const jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) throw new Error('No JSON object found');\n  const parsed = JSON.parse(jsonMatch[0]);\n  translatedTexts = parsed.translated_texts;\n  seo = parsed.seo || {};\n  if (!Array.isArray(translatedTexts)) throw new Error('translated_texts is not an array');\n} catch (e) {\n  try {\n    const arrMatch = rawText.match(/\\[[\\s\\S]*\\]/);\n    if (!arrMatch) throw new Error('No parseable response');\n    translatedTexts = JSON.parse(arrMatch[0]);\n  } catch (e2) {\n    throw new Error('Failed to parse Gemini response: ' + e.message + ' | Raw: ' + rawText.substring(0, 300));\n  }\n}\n\nconst timestamps = parseOut.timestamps || [];\nconst originals = parseOut.texts || [];\nif (translatedTexts.length !== timestamps.length) {\n  if (translatedTexts.length < timestamps.length) {\n    for (let i = translatedTexts.length; i < timestamps.length; i++) translatedTexts.push(originals[i] || '...');\n  } else {\n    translatedTexts = translatedTexts.slice(0, timestamps.length);\n  }\n}\n\nconst cleanedTexts = translatedTexts.map((text, index) => {\n  const original = originals[index] || '';\n  const normalized = String(text || '').replace(/\\s+/g, ' ').trim();\n  return normalized || original || '...';\n});\n\nconst srtLines = [];\nfor (let i = 0; i < timestamps.length; i++) {\n  srtLines.push(timestamps[i].id);\n  srtLines.push(timestamps[i].ts);\n  srtLines.push(cleanedTexts[i]);\n  srtLines.push('');\n}\nconst burmeseSrt = srtLines.join('\\n');\nconst srtB64 = Buffer.from(burmeseSrt, 'utf-8').toString('base64');\n\nreturn [{\n  json: {\n    job_id: info.job_id,\n    work_dir: info.work_dir,\n    width: info.width,\n    height: info.height,\n    duration: info.duration,\n    platform: info.platform,\n    source_url: info.source_url || info.url,\n    lang: info.lang,\n    lang_name: info.lang_name,\n    vo_voice: info.vo_voice,\n    vo_rate: info.vo_rate,\n    vo_pitch: info.vo_pitch,\n    burmese_srt_b64: srtB64,\n    translated_texts: cleanedTexts,\n    original_texts: originals,\n    timestamps,\n    block_count: timestamps.length,\n    srt_preview: burmeseSrt.substring(0, 300),\n    seo\n  }\n}];"
+      },
+      "id": "web_build",
+      "name": "Build FFmpeg Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        352
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=WD=\"{{ $json.work_dir }}\"\nVOICE=\"{{ $json.vo_voice }}\"\nDURATION=\"{{ $json.duration }}\"\nJOB_ID=\"{{ $json.job_id || $('Validate URL').first().json.job_id }}\"\nexport JOB_ID\nmkdir -p /media/dub/web_status\npython3 - <<'PY'\nimport json, os, datetime\npath = f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\"\nwith open(path, 'w', encoding='utf-8') as f:\n    json.dump({'job_id': os.environ['JOB_ID'], 'status': 'processing', 'stage': 'generating_voice', 'error_message': None, 'updated_at': datetime.datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)\nPY\n\necho \"=== Writing Burmese SRT ===\"\necho '{{ $json.burmese_srt_b64 }}' | base64 -d > \"$WD/burmese.srt\"\nif [ ! -s \"$WD/burmese.srt\" ]; then echo \"ERROR: SRT is empty or invalid\"; exit 1; fi\ncat > \"$WD/async_tts_mix.py\" << 'PYTHON_SCRIPT'\nimport asyncio, datetime, json, os, re, subprocess, sys\nMAX_SPEEDUP = 1.15\nMIN_GAP = 0.15\nMIN_SLOT = 0.25\nMAX_CHARS_PER_LINE = 56\n\nSPLIT_RE = re.compile(r'([၊။,!?:;])')\n\ndef parse_ts(value):\n    m = re.match(r'(\\d{2}):(\\d{2}):(\\d{2})[,.](\\d{3})', value)\n    if not m:\n        return 0.0\n    h, mi, s, ms = map(int, m.groups())\n    return h * 3600 + mi * 60 + s + ms / 1000.0\n\ndef parse_srt(path):\n    content = open(path, 'r', encoding='utf-8').read().strip()\n    items = []\n    for idx, block in enumerate(re.split(r'\\n\\n+', content)):\n        lines = [line.strip() for line in block.splitlines() if line.strip()]\n        if len(lines) < 2:\n            continue\n        ts_idx = next((i for i, line in enumerate(lines) if '-->' in line), -1)\n        if ts_idx < 0:\n            continue\n        start_s, end_s = [part.strip() for part in lines[ts_idx].split('-->')]\n        text = ' '.join(lines[ts_idx + 1:]).strip()\n        if text:\n            items.append({'index': idx, 'text': text, 'original_start': parse_ts(start_s), 'original_end': parse_ts(end_s)})\n    return items\n\ndef split_text_for_tts(text, max_chars=MAX_CHARS_PER_LINE):\n    text = re.sub(r'\\s+', ' ', text).strip()\n    if len(text) <= max_chars:\n        return [text]\n    tokens = SPLIT_RE.split(text)\n    chunks, current = [], ''\n    for token in tokens:\n        if not token:\n            continue\n        candidate = (current + token).strip()\n        if len(candidate) <= max_chars or not current:\n            current = candidate\n            continue\n        chunks.append(current.strip())\n        current = token.strip()\n    if current:\n        chunks.append(current.strip())\n    final = []\n    for chunk in chunks:\n        if len(chunk) <= max_chars:\n            final.append(chunk)\n            continue\n        words = chunk.split(' ')\n        part = ''\n        for w in words:\n            cand = (part + ' ' + w).strip()\n            if len(cand) <= max_chars or not part:\n                part = cand\n            else:\n                final.append(part)\n                part = w\n        if part:\n            final.append(part)\n    return [c for c in final if c]\n\ndef expand_entries(entries):\n    expanded = []\n    for entry in entries:\n        parts = split_text_for_tts(entry['text'])\n        if len(parts) == 1:\n            expanded.append(entry)\n            continue\n        total = max(entry['original_end'] - entry['original_start'], MIN_SLOT)\n        weights = [max(1, len(p)) for p in parts]\n        wsum = float(sum(weights))\n        cursor = entry['original_start']\n        for i, part in enumerate(parts):\n            if i == len(parts) - 1:\n                end = entry['original_end']\n            else:\n                seg = max(MIN_SLOT, total * (weights[i] / wsum))\n                end = min(entry['original_end'], cursor + seg)\n            expanded.append({\n                'index': entry['index'] * 100 + i,\n                'text': part,\n                'original_start': cursor,\n                'original_end': end,\n                'split_from': entry['index']\n            })\n            cursor = end\n    return expanded\n\ndef ffprobe_duration(path):\n    try:\n        out = subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path], text=True, timeout=15).strip()\n        return float(out or 0)\n    except Exception:\n        return 0.0\n\nasync def gen_tts(text, voice, out_path, retries=3):\n    for _ in range(retries):\n        proc = await asyncio.create_subprocess_exec('edge-tts', '--voice', voice, '--pitch', '+0Hz', '--rate', '+0%', '--text', text, '--write-media', out_path, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)\n        await proc.communicate()\n        if proc.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 0:\n            return True\n        await asyncio.sleep(0.6)\n    return False\n\ndef render_segment(src, dst, speedup):\n    filters = []\n    ratio = max(1.0, speedup)\n    while ratio > 2.0:\n        filters.append('atempo=2.0')\n        ratio /= 2.0\n    filters.append(f'atempo={ratio:.4f}')\n    result = subprocess.run(['ffmpeg', '-y', '-i', src, '-af', ','.join(filters), '-ar', '24000', '-ac', '1', dst], capture_output=True, text=True, timeout=60)\n    if result.returncode != 0 or not os.path.exists(dst):\n        raise RuntimeError(result.stderr[-400:])\n    return ffprobe_duration(dst)\n\ndef write_status(wd, stage, status='processing', error_message=None):\n    with open(f\"/media/dub/web_status/{os.path.basename(wd)}.json\", 'w', encoding='utf-8') as f:\n        json.dump({'job_id': os.path.basename(wd), 'status': status, 'stage': stage, 'error_message': error_message, 'updated_at': datetime.datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)\n\nasync def main(wd, voice, video_dur):\n    entries = parse_srt(os.path.join(wd, 'burmese.srt'))\n    if not entries:\n        raise RuntimeError('No entries in SRT')\n    entries = expand_entries(entries)\n    if not entries:\n        raise RuntimeError('No usable entries after split')\n    write_status(wd, 'generating_voice')\n    raw_dir = os.path.join(wd, 'tts_raw'); proc_dir = os.path.join(wd, 'tts_proc')\n    os.makedirs(raw_dir, exist_ok=True); os.makedirs(proc_dir, exist_ok=True)\n    usable = []\n    skipped = []\n    for entry in entries:\n        raw_path = os.path.join(raw_dir, f\"line_{entry['index']:06d}.mp3\")\n        ok = await gen_tts(entry['text'], voice, raw_path)\n        if not ok:\n            skipped.append({'index': entry['index'], 'text': entry['text'], 'reason': 'tts_failed'})\n            continue\n        entry['raw_path'] = raw_path\n        entry['tts_duration'] = ffprobe_duration(raw_path)\n        if entry['tts_duration'] <= 0:\n            skipped.append({'index': entry['index'], 'text': entry['text'], 'reason': 'invalid_duration'})\n            continue\n        usable.append(entry)\n    if not usable:\n        raise RuntimeError('All TTS lines failed')\n\n    cursor = 0.0; debug = []; processed = []\n    for i, entry in enumerate(usable):\n        slot = max(entry['original_end'] - entry['original_start'], MIN_SLOT)\n        next_start = usable[i + 1]['original_start'] if i + 1 < len(usable) else video_dur\n        adjusted_start = max(entry['original_start'], cursor)\n        remaining = max(MIN_SLOT, next_start - adjusted_start - MIN_GAP)\n        target_duration = max(MIN_SLOT, min(slot, remaining))\n        desired_speedup = entry['tts_duration'] / max(target_duration, MIN_SLOT)\n        speedup = min(MAX_SPEEDUP, max(1.0, desired_speedup))\n\n        proc_path = os.path.join(proc_dir, f\"line_{entry['index']:06d}.wav\")\n        processed_duration = render_segment(entry['raw_path'], proc_path, speedup)\n        overflow = max(0.0, processed_duration - target_duration)\n\n        adjusted_end = adjusted_start + processed_duration\n        if adjusted_end > video_dur:\n            overshoot = adjusted_end - video_dur\n            adjusted_start = max(0.0, adjusted_start - overshoot)\n            adjusted_end = adjusted_start + processed_duration\n\n        cursor = adjusted_end + MIN_GAP\n        processed.append({'path': proc_path, 'start': adjusted_start})\n        debug.append({\n            'text': entry['text'],\n            'split_from': entry.get('split_from'),\n            'original_start': round(entry['original_start'], 3),\n            'original_end': round(entry['original_end'], 3),\n            'slot_duration': round(slot, 3),\n            'target_duration': round(target_duration, 3),\n            'tts_duration': round(entry['tts_duration'], 3),\n            'processed_duration': round(processed_duration, 3),\n            'adjusted_start': round(adjusted_start, 3),\n            'adjusted_end': round(adjusted_end, 3),\n            'speedup': round(speedup, 4),\n            'max_speedup_hit': bool(desired_speedup > MAX_SPEEDUP),\n            'overflow_sec': round(overflow, 3),\n        })\n\n    for skipped_entry in skipped:\n        debug.append({'text': skipped_entry['text'], 'original_start': None, 'original_end': None, 'slot_duration': None, 'tts_duration': None, 'adjusted_start': None, 'adjusted_end': None, 'speedup': None, 'skipped_reason': skipped_entry['reason']})\n\n    debug_path = os.path.join(wd, 'timing_debug.json')\n    with open(debug_path, 'w', encoding='utf-8') as f:\n        json.dump(debug, f, ensure_ascii=False, indent=2)\n\n    inputs = []; filters = []\n    for i, seg in enumerate(processed):\n        inputs.extend(['-i', seg['path']])\n        delay_ms = max(0, int(seg['start'] * 1000))\n        filters.append(f'[{i}:a]adelay={delay_ms}|{delay_ms},apad[d{i}]')\n    mix_inputs = ''.join(f'[d{i}]' for i in range(len(processed)))\n    filters.append(f'{mix_inputs}amix=inputs={len(processed)}:duration=longest:dropout_transition=0:normalize=0[m]')\n    filters.append(f'[m]atrim=0:{video_dur:.3f}[out]')\n\n    raw_mix = os.path.join(wd, 'vo_mixed_raw.wav'); final_out = os.path.join(wd, 'vo_full.mp3')\n    mix = subprocess.run(['ffmpeg', '-y', *inputs, '-filter_complex', ';'.join(filters), '-map', '[out]', '-ar', '24000', '-ac', '1', raw_mix], capture_output=True, text=True, timeout=240)\n    if mix.returncode != 0:\n        raise RuntimeError('Mix failed: ' + mix.stderr[-500:])\n\n    norm = subprocess.run(['ffmpeg', '-y', '-i', raw_mix, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-ar', '44100', '-ac', '1', '-b:a', '192k', final_out], capture_output=True, text=True, timeout=120)\n    if norm.returncode != 0 or not os.path.exists(final_out):\n        raise RuntimeError('Loudnorm output failed: ' + norm.stderr[-500:])\n\n    for folder in (raw_dir, proc_dir):\n        for name in os.listdir(folder):\n            try:\n                os.remove(os.path.join(folder, name))\n            except OSError:\n                pass\n\n    print('TIMING_DEBUG=' + debug_path)\n    print('VO_DURATION=' + str(round(ffprobe_duration(final_out), 3)))\n    print('VO_READY=true')\n\nasyncio.run(main(sys.argv[1], sys.argv[2], float(sys.argv[3])))\n\nPYTHON_SCRIPT\npython3 \"$WD/async_tts_mix.py\" \"$WD\" \"$VOICE\" \"$DURATION\" 2>&1\nif [ ! -s \"$WD/vo_full.mp3\" ]; then echo \"ERROR: vo_full.mp3 not created\"; exit 1; fi"
+      },
+      "id": "web_vo",
+      "name": "Generate Voiceover",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        464,
+        352
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=WD=\"{{ $('Build FFmpeg Plan').first().json.work_dir }}\"\nJOB_ID=\"{{ $('Build FFmpeg Plan').first().json.job_id || $('Validate URL').first().json.job_id }}\"\nexport JOB_ID\nmkdir -p /media/dub/web_status /media/dub/output\npython3 - <<'PY'\nimport json, os, datetime\npath = f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\"\nwith open(path, 'w', encoding='utf-8') as f:\n    json.dump({'job_id': os.environ['JOB_ID'], 'status': 'processing', 'stage': 'rendering', 'error_message': None, 'updated_at': datetime.datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)\nPY\n\necho \"=== Mixing VO + Rendering Final ===\"\nif [ ! -s \"$WD/vo_full.mp3\" ]; then echo \"ERROR: vo_full.mp3 missing\"; exit 1; fi\nif [ ! -s \"$WD/source.mp4\" ]; then echo \"ERROR: source.mp4 missing\"; exit 1; fi\nVIDEO_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 \"$WD/source.mp4\" 2>/dev/null)\nVO_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 \"$WD/vo_full.mp3\" 2>/dev/null)\necho \"VIDEO: ${VIDEO_DUR}s | VO: ${VO_DUR}s\"\nffmpeg -y -i \"$WD/source.mp4\" -i \"$WD/vo_full.mp3\" -map 0:v:0 -map 1:a:0 -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart -shortest \"$WD/final.mp4\" 2>&1 | tail -5\nif [ ! -s \"$WD/final.mp4\" ]; then echo \"ERROR: final.mp4 not created\"; exit 1; fi\nFINAL_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 \"$WD/final.mp4\" 2>/dev/null)\nSIZE=$(du -h \"$WD/final.mp4\" | cut -f1)\ncp \"$WD/final.mp4\" \"/media/dub/output/${JOB_ID}.mp4\"\necho \"FINAL=$WD/final.mp4\"\necho \"OUTPUT_COPY=/media/dub/output/${JOB_ID}.mp4\"\necho \"DURATION=${FINAL_DUR}s | SIZE=${SIZE}\""
+      },
+      "id": "web_render",
+      "name": "Mix VO + Render Final",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        624
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "resource": "file",
+        "operation": "download",
+        "path": "={{ $('Build FFmpeg Plan').first().json.work_dir }}/final.mp4",
+        "options": {}
+      },
+      "id": "web_dl_final",
+      "name": "SSH Download Final",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        80,
+        624
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst hasBinary = !!item.binary?.data;\nif (hasBinary) {\n  return [{ json: { success: true, stage: 'rendering', error_message: null }, binary: item.binary }];\n}\n\ntry {\n  const parseOut = $('Parse Transcript').first().json || {};\n  if (parseOut.error) {\n    return [{ json: { success: false, stage: 'transcribe_failed', error_message: String(parseOut.error).slice(0, 1000) } }];\n  }\n} catch (error) {}\n\ntry {\n  const buildOut = $('Build FFmpeg Plan').first().json || {};\n  if (buildOut.error) {\n    return [{ json: { success: false, stage: 'translate_failed', error_message: String(buildOut.error).slice(0, 1000) } }];\n  }\n} catch (error) {}\n\ntry {\n  const voOut = $('Generate Voiceover').first().json || {};\n  const text = `${voOut.stdout || ''} ${voOut.stderr || ''}`;\n  if (/ERROR|failed|exception/i.test(text)) {\n    return [{ json: { success: false, stage: 'tts_failed', error_message: text.split('\\n').filter((line) => /ERROR|failed|exception/i.test(line)).join(' | ').slice(0, 1000) || text.slice(0, 1000) } }];\n  }\n} catch (error) {}\n\ntry {\n  const mixOut = $('Mix VO + Render Final').first().json || {};\n  const text = `${mixOut.stdout || ''} ${mixOut.stderr || ''}`;\n  if (/ERROR|failed|exception/i.test(text)) {\n    return [{ json: { success: false, stage: 'render_failed', error_message: text.split('\\n').filter((line) => /ERROR|failed|exception/i.test(line)).join(' | ').slice(0, 1000) || text.slice(0, 1000) } }];\n  }\n} catch (error) {}\n\ntry {\n  const dlOut = $('Download Video').first().json.stdout || '';\n  if (/ERROR: source\\.mp4 not found|Unsupported platform|yt-dlp binary not available/i.test(dlOut)) {\n    return [{ json: { success: false, stage: 'download_failed', error_message: dlOut.split('\\n').filter((line) => /ERROR/i.test(line)).join(' | ').slice(0, 1000) || dlOut.slice(0, 1000) } }];\n  }\n} catch (error) {}\n\nreturn [{ json: { success: false, stage: 'render_failed', error_message: 'ဗီဒီယို ဖိုင် ရရှိ၍ မရပါ' } }];"
+      },
+      "id": "web_check",
+      "name": "Check Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        624
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "web_if_success",
+      "name": "IF Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -336,
+        912
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=WD=\"{{ $('Validate URL').first().json.work_dir }}\"\nPLATFORM=\"{{ $('Validate URL').first().json.platform }}\"\nURL=\"{{ $('Validate URL').first().json.url }}\"\nLANG=\"{{ $('Validate URL').first().json.lang_name || 'Burmese' }}\"\nUSER_TOKEN=\"{{ $('Validate URL').first().json.userToken || '' }}\"\nJOB_ID=$(basename \"$WD\")\nSEO_JSON='{{ JSON.stringify($(\"Build FFmpeg Plan\").first().json.seo || {}) }}'\nBLUR_STDOUT='{{ JSON.stringify($(\"Apply Caption Blur\").first().json.stdout || \"\") }}'\nexport JOB_ID PLATFORM URL LANG USER_TOKEN SEO_JSON BLUR_STDOUT\nmkdir -p /media/dub/web_status /media/dub/output\ncp \"$WD/final.mp4\" \"/media/dub/output/${JOB_ID}.mp4\" 2>/dev/null || true\npython3 - <<'PY'\nimport json, os, datetime\nseo = {}\ntry:\n    seo = json.loads(os.environ['SEO_JSON'])\nexcept Exception:\n    seo = {}\nblur_stdout = os.environ.get('BLUR_STDOUT', '')\nblur_error = None\nblur_state = 'ok'\nif 'BLUR_FAILED=true' in blur_stdout or 'BLUR_SKIPPED=true' in blur_stdout:\n    blur_state = 'failed'\n    blur_error = 'Caption blur skipped; keeping unblurred final video'\nstatus = {\n    'job_id': os.environ['JOB_ID'],\n    'status': 'processing',\n    'stage': 'publishing',\n    'error_message': blur_error,\n    'updated_at': datetime.datetime.utcnow().isoformat() + 'Z',\n    'platform': os.environ['PLATFORM'],\n    'source_url': os.environ['URL'],\n    'lang': os.environ['LANG'],\n    'blur_status': blur_state,\n}\nif seo:\n    status['seo'] = seo\nwith open(f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\", 'w', encoding='utf-8') as f:\n    json.dump(status, f, ensure_ascii=False)\nPY\n\necho \"Status: publishing | Job: ${JOB_ID}\""
+      },
+      "id": "web_write_done",
+      "name": "Write Done Status",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        544,
+        1232
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=JOB_ID=\"{{ $json.job_id || $('Validate URL').first().json.job_id }}\"\nSTAGE=\"{{ $json.stage || $('Check Result').first().json.stage || 'failed' }}\"\nERROR_B64=\"{{ Buffer.from((($json.error_message || $('Check Result').first().json.error_message || 'Unknown error') + '').replace(/[\\r\\n]+/g, ' ').slice(0, 1500), 'utf8').toString('base64') }}\"\nexport JOB_ID STAGE ERROR_B64\nmkdir -p /media/dub/web_status\npython3 - <<'PY'\nimport base64, json, os, datetime\nerror_message = None\nif os.environ.get('ERROR_B64'):\n    error_message = base64.b64decode(os.environ['ERROR_B64']).decode('utf-8', errors='replace')\nwith open(f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\", 'w', encoding='utf-8') as f:\n    json.dump({\n        'job_id': os.environ['JOB_ID'],\n        'status': 'failed',\n        'stage': os.environ['STAGE'],\n        'error_message': error_message,\n        'updated_at': datetime.datetime.utcnow().isoformat() + 'Z',\n    }, f, ensure_ascii=False)\nprint('Error status written')\nPY"
+      },
+      "id": "web_write_error",
+      "name": "Write Error Status",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        1920
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "path": "burmese-dub-status",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://riddler9999.github.io"
+        }
+      },
+      "id": "status_webhook",
+      "name": "Status Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1184,
+        528
+      ],
+      "webhookId": "burmese-dub-status",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=JOB_ID_RAW=\"{{ $json.query.job_id || '' }}\"\nJOB_ID=$(printf '%s' \"$JOB_ID_RAW\" | tr -cd 'A-Za-z0-9_-')\nif [ -n \"$JOB_ID\" ] && [ -f \"/media/dub/web_status/${JOB_ID}.json\" ]; then\n  cat \"/media/dub/web_status/${JOB_ID}.json\"\nelse\n  python3 - <<'PY'\nimport json, datetime, os\nprint(json.dumps({\n  'job_id': os.environ.get('JOB_ID', ''),\n  'status': 'processing',\n  'stage': 'queued',\n  'error_message': None,\n  'updated_at': datetime.datetime.utcnow().isoformat() + 'Z'\n}, ensure_ascii=False))\nPY\nfi"
+      },
+      "id": "web_read_status",
+      "name": "Read Web Status",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        528
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.stdout || JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond_status",
+      "name": "Respond Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -608,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🌐 Website Input\nWebhook receives video URL from website form\nValidates URL → returns job_id for polling",
+        "height": 728,
+        "width": 896,
+        "color": 4
+      },
+      "id": "note_w1",
+      "name": "🌐 Web Input",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ⬇️ Download → Transcribe → Translate → Voiceover → Merge",
+        "height": 824,
+        "width": 1120,
+        "color": 6
+      },
+      "id": "note_w2",
+      "name": "⬇️ Process",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📤 Auto Caption",
+        "height": 584,
+        "width": 1112,
+        "color": 2
+      },
+      "id": "note_w3",
+      "name": "📤 Output",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "path": "burmese-dub-video",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "video_webhook",
+      "name": "Video Serve Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1200,
+        800
+      ],
+      "webhookId": "burmese-dub-video",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "resource": "file",
+        "operation": "download",
+        "path": "=/media/dub/output/{{ String($json.query.job_id || '').replace(/[^A-Za-z0-9_-]/g, '') }}.mp4",
+        "options": {}
+      },
+      "id": "serve_download",
+      "name": "Download Video for Serve",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        800
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "video/mp4"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "=inline; filename=\"burmese_dub_{{ String($('Video Serve Webhook').first().json.query.job_id || 'video').replace(/[^A-Za-z0-9_-]/g, '') }}.mp4\""
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "serve_respond",
+      "name": "Respond Video",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -688,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🎬 Video Serve\nWebsite requests video by job_id → SSH downloads → serves binary mp4",
+        "height": 308,
+        "width": 900,
+        "color": 3
+      },
+      "id": "note_video_serve",
+      "name": "🎬 Video Serve",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-auth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://riddler9999.github.io"
+        }
+      },
+      "id": "tt_auth_webhook",
+      "name": "TikTok Auth Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1248,
+        1184
+      ],
+      "webhookId": "tiktok-auth",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/oauth/token/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_key",
+              "value": "={{ $env.TIKTOK_CLIENT_KEY || '' }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $env.TIKTOK_CLIENT_SECRET || '' }}"
+            },
+            {
+              "name": "code",
+              "value": "={{ String($json.body.code || '').replace(/[^A-Za-z0-9_-]/g, '') }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "authorization_code"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://riddler9999.github.io/burmese-dub-bot/callback.html"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "tt_exchange",
+      "name": "Exchange TikTok Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1216,
+        1392
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=mkdir -p /media/dub/tiktok\nTOKEN_DATA='{{ JSON.stringify($json || {}) }}'\necho \"$TOKEN_DATA\" > /media/dub/tiktok/token.json\nACCESS=$(echo \"$TOKEN_DATA\" | python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('access_token',''))\" 2>/dev/null)\nREFRESH=$(echo \"$TOKEN_DATA\" | python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('refresh_token',''))\" 2>/dev/null)\nOPEN_ID=$(echo \"$TOKEN_DATA\" | python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('open_id',''))\" 2>/dev/null)\nif [ -n \"$ACCESS\" ] && [ \"$ACCESS\" != \"None\" ]; then\n  echo \"TOKEN_SAVED=true\"\n  echo \"OPEN_ID=$OPEN_ID\"\n  echo \"EXPIRES=$(echo \"$TOKEN_DATA\" | python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('expires_in',''))\" 2>/dev/null)\"\nelse\n  echo \"TOKEN_SAVED=false\"\n  echo \"ERROR: No access token in response\"\nfi"
+      },
+      "id": "tt_save_token",
+      "name": "Save TikTok Token",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        1392
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify(\n  $json.stdout && $json.stdout.includes('TOKEN_SAVED=true') \n    ? { status: 'success', message: 'TikTok connected' }\n    : { status: 'error', message: 'Token exchange failed' }\n) }}",
+        "options": {}
+      },
+      "id": "tt_respond",
+      "name": "Respond TikTok Auth",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -784,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "={{ (() => {\n  const workDir = $('Validate URL').first().json.work_dir;\n  const script = [\n    'WD=\"' + workDir + '\"',\n    'JOB_ID=$(basename \"$WD\")',\n    'TOKEN_FILE=\"/media/dub/tiktok/token.json\"',\n    '',\n    'if [ ! -f \"$TOKEN_FILE\" ]; then',\n    '  echo \"TIKTOK_SKIP=true\"',\n    '  echo \"No TikTok token found. Skipping TikTok publish.\"',\n    '  exit 0',\n    'fi',\n    '',\n    'ACCESS_TOKEN=$(python3 -c \"import json; d=json.load(open(\\'$TOKEN_FILE\\')); print(d.get(\\'access_token\\',\\'\\'))\" 2>/dev/null)',\n    'if [ -z \"$ACCESS_TOKEN\" ] || [ \"$ACCESS_TOKEN\" = \"None\" ]; then',\n    '  echo \"TIKTOK_SKIP=true\"',\n    '  echo \"Invalid token. Skipping.\"',\n    '  exit 0',\n    'fi',\n    '',\n    'FINAL=\"/media/dub/output/$JOB_ID.mp4\"',\n    'if [ ! -f \"$FINAL\" ]; then',\n    '  FINAL=\"$WD/final.mp4\"',\n    'fi',\n    'if [ ! -f \"$FINAL\" ]; then',\n    '  echo \"TIKTOK_ERROR=true\"',\n    '  echo \"No final video found\"',\n    '  exit 0',\n    'fi',\n    '',\n    'FILE_SIZE=$(stat -c%s \"$FINAL\" 2>/dev/null)',\n    'echo \"Video: $FINAL ($FILE_SIZE bytes)\"',\n    'echo \"=== Uploading to TikTok ===\"',\n    '',\n    'INIT_PAYLOAD=\\'{\"source_info\":{\"source\":\"FILE_UPLOAD\",\"video_size\":' + '\"$FILE_SIZE\"' + ',\"chunk_size\":' + '\"$FILE_SIZE\"' + ',\"total_chunk_count\":1}' + '}\\'',\n    'INIT_RESP=$(curl -s -X POST \"https://open.tiktokapis.com/v2/post/publish/inbox/video/init/\" -H \"Authorization: Bearer $ACCESS_TOKEN\" -H \"Content-Type: application/json\" -d \"$INIT_PAYLOAD\")',\n    'echo \"Init response: $INIT_RESP\"',\n    '',\n    'UPLOAD_URL=$(echo \"$INIT_RESP\" | python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get(\\'data\\',{}).get(\\'upload_url\\',\\'\\'))\" 2>/dev/null)',\n    'PUBLISH_ID=$(echo \"$INIT_RESP\" | python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get(\\'data\\',{}).get(\\'publish_id\\',\\'\\'))\" 2>/dev/null)',\n    '',\n    'if [ -z \"$UPLOAD_URL\" ] || [ \"$UPLOAD_URL\" = \"None\" ]; then',\n    '  echo \"TIKTOK_ERROR=true\"',\n    '  echo \"Failed to get upload URL\"',\n    '  exit 0',\n    'fi',\n    '',\n    'echo \"Uploading to: $UPLOAD_URL\"',\n    'LAST_BYTE=$((FILE_SIZE-1))',\n    'UPLOAD_RESP=$(curl -s -X PUT \"$UPLOAD_URL\" -H \"Content-Type: video/mp4\" -H \"Content-Range: bytes 0-$LAST_BYTE/$FILE_SIZE\" --data-binary \"@$FINAL\")',\n    'echo \"Upload response: $UPLOAD_RESP\"',\n    'echo \"TIKTOK_DONE=true\"',\n    'echo \"PUBLISH_ID=$PUBLISH_ID\"'\n  ].join('\\n');\n  return 'echo ' + Buffer.from(script, 'utf8').toString('base64') + ' | base64 -d | bash';\n})() }}"
+      },
+      "id": "tt_publish",
+      "name": "TikTok Publish",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        528,
+        1536
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## 🎵 TikTok OAuth\nAuth code exchange → save token → auto-publish videos",
+        "height": 704,
+        "width": 900,
+        "color": 5
+      },
+      "id": "note_tt",
+      "name": "🎵 TikTok",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=WD=\"{{ $('Build FFmpeg Plan').first().json.work_dir }}\"\nJOB_ID=$(basename \"$WD\")\nexport JOB_ID\nmkdir -p /media/dub/web_status\npython3 - <<'PY'\nimport json, os, datetime\nwith open(f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\", 'w', encoding='utf-8') as f:\n    json.dump({'job_id': os.environ['JOB_ID'], 'status': 'processing', 'stage': 'blurring', 'error_message': None, 'updated_at': datetime.datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)\nPY\n\necho \"=== Starting Caption Blur ===\"\nif [ ! -s \"$WD/final.mp4\" ]; then\n  echo \"BLUR_FAILED=true\"\n  echo \"BLUR_ERROR=No final.mp4 found\"\n  exit 0\nfi\nDURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 \"$WD/final.mp4\" 2>/dev/null)\nHALF=$(python3 -c \"print(f'{float(\\\"$DURATION\\\")/2:.2f}')\")\nRESOLUTION=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 \"$WD/final.mp4\" 2>/dev/null)\nWIDTH=$(echo \"$RESOLUTION\" | cut -d',' -f1)\nHEIGHT=$(echo \"$RESOLUTION\" | cut -d',' -f2)\nffmpeg -y -ss \"$HALF\" -i \"$WD/final.mp4\" -vframes 1 -q:v 2 \"$WD/blur_frame.jpg\" 2>/dev/null\nif [ ! -s \"$WD/blur_frame.jpg\" ]; then\n  echo \"BLUR_FAILED=true\"\n  echo \"BLUR_ERROR=Frame extraction failed\"\n  exit 0\nfi\ncat > \"$WD/blur_request.json\" << BJSON\n{\"width\":$WIDTH,\"height\":$HEIGHT,\"frame_path\":\"$WD/blur_frame.jpg\",\"source\":\"$WD/final.mp4\",\"job_id\":\"$JOB_ID\",\"duration\":\"$DURATION\"}\nBJSON\necho \"BLUR_READY=true\"\necho \"FRAME=$WD/blur_frame.jpg\"\necho \"WIDTH=$WIDTH\"\necho \"HEIGHT=$HEIGHT\""
+      },
+      "id": "chain_blur",
+      "name": "Trigger Caption Blur",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        896
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $input.first().json.stdout || '';\nif (!stdout.includes('BLUR_READY=true')) {\n  return [{ json: { skip: true } }];\n}\n\nconst get = (key) => {\n  const match = stdout.match(new RegExp(`${key}=(.+)`));\n  return match ? match[1].trim() : '';\n};\n\nconst plan = $('Build FFmpeg Plan').first().json;\n\nreturn [{\n  json: {\n    skip: false,\n    wd: plan.work_dir,\n    width: parseInt(get('WIDTH'), 10) || 0,\n    height: parseInt(get('HEIGHT'), 10) || 0,\n    frame_path: get('FRAME')\n  }\n}];"
+      },
+      "id": "read_blur_info",
+      "name": "Read Blur Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        896
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "resource": "file",
+        "operation": "download",
+        "path": "={{ $json.frame_path }}",
+        "options": {}
+      },
+      "id": "get_blur_frame",
+      "name": "Get Blur Frame",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        496,
+        896
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list"
+        },
+        "text": "=This image is a video frame. Resolution: {{ $('Read Blur Info').first().json.width }}x{{ $('Read Blur Info').first().json.height }} pixels.\n\nFind ALL text overlays, captions, subtitles, watermarks visible in this frame.\nReturn ONLY valid JSON:\n{\"regions\":[{\"x\":100,\"y\":800,\"w\":500,\"h\":60,\"label\":\"subtitle\"}]}\n\nRules: x=left edge, y=top edge, w=width, h=height (all in pixels). Add 10px padding. If no text: {\"regions\":[]}",
+        "options": {}
+      },
+      "id": "gemini_blur",
+      "name": "Gemini Detect Captions",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -336,
+        1232
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EdhkQkEMHxYad7UW",
+          "name": "Icecream"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=WD=\"{{ $('Build FFmpeg Plan').first().json.work_dir }}\"\nJOB_ID=$(basename \"$WD\")\nGEMINI_RAW='{{ JSON.stringify($json) }}'\necho \"=== Applying Caption Blur ===\"\nREGIONS=$(python3 -c \"import json,re\nraw='''$GEMINI_RAW'''\ntext=''\ntry:\n d=json.loads(raw)\n if 'content' in d and 'parts' in d['content']:\n  text=d['content']['parts'][0].get('text','')\n elif 'candidates' in d:\n  text=d['candidates'][0]['content']['parts'][0].get('text','')\n else:\n  text=raw\nexcept Exception:\n text=raw\ntext=re.sub(r'```json\\n?', '', text)\ntext=re.sub(r'```\\n?', '', text)\nm=re.search(r'\\{[\\s\\S]*\\}', text)\nif m:\n parsed=json.loads(m.group())\n regions=parsed.get('regions', [])\n print(json.dumps(regions) if regions else 'NONE')\nelse:\n print('NONE')\" 2>/dev/null)\nif [ \"$REGIONS\" = \"NONE\" ] || [ -z \"$REGIONS\" ]; then\n  echo \"BLUR_SKIPPED=true\"\n  echo \"BLUR_ERROR=No caption regions found\"\n  exit 0\nfi\nFILTER=$(python3 -c \"import json\nregions=json.loads('''$REGIONS''')\nwidth=int('{{ $('Read Blur Info').first().json.width }}')\nheight=int('{{ $('Read Blur Info').first().json.height }}')\nparts=[]\nprev='[0:v]'\nfor i,r in enumerate(regions):\n x=max(0,min(int(r['x']), width-1)); y=max(0,min(int(r['y']), height-1))\n w=max(1,min(int(r['w']), width-x)); h=max(1,min(int(r['h']), height-y))\n tag=f'[blur{i}]'\n parts.append(f'{prev}split[main{i}][copy{i}]')\n parts.append(f'[copy{i}]crop={w}:{h}:{x}:{y},boxblur=30:10[blurred{i}]')\n parts.append(f'[main{i}][blurred{i}]overlay={x}:{y}{tag}')\n prev=tag\nprint(';'.join(parts)); print(prev)\")\nFILTER_STR=$(echo \"$FILTER\" | head -1)\nLAST_TAG=$(echo \"$FILTER\" | tail -1)\nffmpeg -y -i \"$WD/final.mp4\" -filter_complex \"$FILTER_STR\" -map \"$LAST_TAG\" -map 0:a? -c:v libx264 -preset fast -crf 20 -c:a copy \"$WD/blurred.mp4\" 2>&1 | tail -5\nif [ -s \"$WD/blurred.mp4\" ]; then\n  mv \"$WD/blurred.mp4\" \"$WD/final.mp4\"\n  cp \"$WD/final.mp4\" \"/media/dub/output/${JOB_ID}.mp4\" 2>/dev/null || true\n  echo \"BLUR_DONE=true\"\nelse\n  echo \"BLUR_FAILED=true\"\n  echo \"BLUR_ERROR=ffmpeg blur render failed\"\nfi"
+      },
+      "id": "apply_blur",
+      "name": "Apply Caption Blur",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        112,
+        1232
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ (($('Build FFmpeg Plan').first().json.seo || {}).youtube || {}).title || ($('Build FFmpeg Plan').first().json.seo || {}).title || 'Burmese Dub' }}",
+        "regionCode": "US",
+        "categoryId": "=22",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        1536
+      ],
+      "id": "e60c3ede-fa52-4c49-9ed0-ca1e4c66e7c4",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "Zy8ygcaYPH09YxEc",
+          "name": "YouTube account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v23.0",
+        "node": "video",
+        "allowUnauthorizedCerts": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        96,
+        1552
+      ],
+      "id": "4a6bfe62-5d3e-4868-a0d0-c98be5980a40",
+      "name": "Facebook Graph API",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "reeElPl1bcYM9Cnn",
+          "name": "Lisa"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "##  🔔Publishing",
+        "height": 312,
+        "width": 1110,
+        "color": "#470F01"
+      },
+      "id": "b900fbb4-328a-4de9-99dd-c70266f0a375",
+      "name": "📤 Output1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=JOB_ID=\"{{ $('Validate URL').first().json.job_id }}\"\nexport JOB_ID\nmkdir -p /media/dub/web_status\npython3 - <<'PY'\nimport json, os, datetime\nwith open(f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\", 'w', encoding='utf-8') as f:\n    json.dump({\n        'job_id': os.environ['JOB_ID'],\n        'status': 'processing',\n        'stage': 'translating',\n        'error_message': None,\n        'updated_at': datetime.datetime.utcnow().isoformat() + 'Z',\n    }, f, ensure_ascii=False)\nPY\n\necho \"TRANSLATE_STATUS=OK\""
+      },
+      "id": "write_translating_status",
+      "name": "Write Translating Status",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        944,
+        144
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst safeId = String(($('Video Serve Webhook').first().json.query?.job_id || '')).replace(/[^A-Za-z0-9_-]/g, '');\nif (item.binary?.data) {\n  return [{ json: { success: true, job_id: safeId }, binary: item.binary }];\n}\nreturn [{ json: { success: false, job_id: safeId, status: 'failed', stage: 'done', error_message: 'Final video not found', updated_at: new Date().toISOString() } }];"
+      },
+      "id": "check_video_response",
+      "name": "Check Video Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        720
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if_video_ready",
+      "name": "IF Video Ready",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -832,
+        720
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ job_id: $json.job_id, status: 'failed', stage: 'done', error_message: $json.error_message || 'Final video not found', updated_at: $json.updated_at || new Date().toISOString() }) }}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "id": "respond_video_error",
+      "name": "Respond Video Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -592,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "publish_results_merge",
+      "name": "Publish Results Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        336,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const blurStdout = String(($('Apply Caption Blur').first().json.stdout || ''));\nconst blurFailed = /BLUR_FAILED=true|BLUR_SKIPPED=true/.test(blurStdout);\nconst results = [];\n\nconst inspect = (name, service) => {\n  try {\n    const item = $(name).first();\n    const text = JSON.stringify(item.json || {});\n    const failed = !!item.json?.error || /ERROR|failed|invalid|unauthorized/i.test(text + ' ' + (item.json?.stdout || ''));\n    results.push({ service, failed, detail: failed ? text.slice(0, 800) : '' });\n  } catch (error) {\n    results.push({ service, failed: true, detail: String(error).slice(0, 800) });\n  }\n};\ninspect('TikTok Publish', 'tiktok');\ninspect('Upload a video', 'youtube');\ninspect('Facebook Graph API', 'facebook');\n\nconst failures = results.filter((item) => item.failed);\nlet stage = 'done';\nlet errorMessage = null;\nif (failures.length > 0) {\n  stage = 'publish_failed';\n  errorMessage = failures.map((item) => `${item.service}: ${item.detail}`).join(' | ').slice(0, 1500);\n} else if (blurFailed) {\n  stage = 'blur_failed';\n  errorMessage = 'Caption blur skipped; keeping unblurred final video';\n}\n\nreturn [{\n  json: {\n    job_id: $('Validate URL').first().json.job_id,\n    stage,\n    status: 'done',\n    error_message: errorMessage,\n    publish_results: results,\n    blur_failed: blurFailed,\n    updated_at: new Date().toISOString(),\n  }\n}];"
+      },
+      "id": "finalize_publish_status",
+      "name": "Finalize Publish Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        1712
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=JOB_ID=\"{{ $json.job_id }}\"\nSTAGE=\"{{ $json.stage }}\"\nERROR_MSG=\"{{ (($json.error_message || '') + '').replace(/[\\r\\n]+/g, ' ').slice(0, 1500) }}\"\nexport JOB_ID STAGE ERROR_MSG\nmkdir -p /media/dub/web_status\npython3 - <<'PY'\nimport json, os, datetime\npath = f\"/media/dub/web_status/{os.environ['JOB_ID']}.json\"\ntry:\n    current = json.load(open(path, encoding='utf-8'))\nexcept Exception:\n    current = {'job_id': os.environ['JOB_ID']}\ncurrent['job_id'] = os.environ['JOB_ID']\ncurrent['status'] = 'done'\ncurrent['stage'] = os.environ['STAGE']\ncurrent['error_message'] = os.environ['ERROR_MSG'] or None\ncurrent['updated_at'] = datetime.datetime.utcnow().isoformat() + 'Z'\nwith open(path, 'w', encoding='utf-8') as f:\n    json.dump(current, f, ensure_ascii=False)\nprint('Publish status written')\nPY"
+      },
+      "id": "write_publish_status",
+      "name": "Write Publish Status",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1712
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "xr1yh0geakgrlCrh",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "publish_results_merge_2",
+      "name": "Publish Results Merge 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        464,
+        1840
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ !$json.error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if_transcript_ready",
+      "name": "IF Transcript Ready",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        96
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json || {};\nreturn [{ json: { job_id: $('Validate URL').first().json.job_id, stage: 'transcribe_failed', error_message: String(item.error || 'Transcript parsing failed') } }];"
+      },
+      "id": "prepare_transcript_error",
+      "name": "Prepare Transcript Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        448
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ !$json.error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if_build_ready",
+      "name": "IF Build Ready",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        240,
+        352
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json || {};\nreturn [{ json: { job_id: $('Validate URL').first().json.job_id, stage: 'translate_failed', error_message: String(item.error || 'Translation/build plan failed') } }];"
+      },
+      "id": "prepare_build_error",
+      "name": "Prepare Build Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        496
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate URL": {
+      "main": [
+        [
+          {
+            "node": "IF Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Valid": {
+      "main": [
+        [
+          {
+            "node": "Respond Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond Accepted": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Parse Video Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Video Info": {
+      "main": [
+        [
+          {
+            "node": "Extract Audio & Transcribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Audio & Transcribe": {
+      "main": [
+        [
+          {
+            "node": "Parse Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Translate": {
+      "main": [
+        [
+          {
+            "node": "Build FFmpeg Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Voiceover": {
+      "main": [
+        [
+          {
+            "node": "Mix VO + Render Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mix VO + Render Final": {
+      "main": [
+        [
+          {
+            "node": "SSH Download Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH Download Final": {
+      "main": [
+        [
+          {
+            "node": "Check Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Result": {
+      "main": [
+        [
+          {
+            "node": "IF Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Success": {
+      "main": [
+        [
+          {
+            "node": "Trigger Caption Blur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write Error Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Web Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Web Status": {
+      "main": [
+        [
+          {
+            "node": "Respond Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Serve Webhook": {
+      "main": [
+        [
+          {
+            "node": "Download Video for Serve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Auth Webhook": {
+      "main": [
+        [
+          {
+            "node": "Exchange TikTok Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange TikTok Token": {
+      "main": [
+        [
+          {
+            "node": "Save TikTok Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save TikTok Token": {
+      "main": [
+        [
+          {
+            "node": "Respond TikTok Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Done Status": {
+      "main": [
+        [
+          {
+            "node": "TikTok Publish",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Caption Blur": {
+      "main": [
+        [
+          {
+            "node": "Read Blur Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Blur Info": {
+      "main": [
+        [
+          {
+            "node": "Get Blur Frame",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Blur Frame": {
+      "main": [
+        [
+          {
+            "node": "Gemini Detect Captions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Detect Captions": {
+      "main": [
+        [
+          {
+            "node": "Apply Caption Blur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Caption Blur": {
+      "main": [
+        [
+          {
+            "node": "Write Done Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Translating Status": {
+      "main": [
+        [
+          {
+            "node": "Gemini Translate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video for Serve": {
+      "main": [
+        [
+          {
+            "node": "Check Video Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Video Response": {
+      "main": [
+        [
+          {
+            "node": "IF Video Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Video Ready": {
+      "main": [
+        [
+          {
+            "node": "Respond Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Video Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Publish": {
+      "main": [
+        [
+          {
+            "node": "Publish Results Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a video": {
+      "main": [
+        [
+          {
+            "node": "Publish Results Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Finalize Publish Status": {
+      "main": [
+        [
+          {
+            "node": "Write Publish Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Results Merge": {
+      "main": [
+        [
+          {
+            "node": "Publish Results Merge 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Graph API": {
+      "main": [
+        [
+          {
+            "node": "Publish Results Merge 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Publish Results Merge 2": {
+      "main": [
+        [
+          {
+            "node": "Finalize Publish Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Transcript": {
+      "main": [
+        [
+          {
+            "node": "IF Transcript Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Transcript Ready": {
+      "main": [
+        [
+          {
+            "node": "Write Translating Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Transcript Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Transcript Error": {
+      "main": [
+        [
+          {
+            "node": "Write Error Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build FFmpeg Plan": {
+      "main": [
+        [
+          {
+            "node": "IF Build Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Build Ready": {
+      "main": [
+        [
+          {
+            "node": "Generate Voiceover",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Build Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Build Error": {
+      "main": [
+        [
+          {
+            "node": "Write Error Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "executionTimeout": 3600,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true,
+    "timeSavedMode": "dynamic",
+    "binaryMode": "separate",
+    "saveExecutionProgress": true
+  },
+  "versionId": "f54a23da-87d1-4d39-8a86-5ad797f711bf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9a87f60729131f753bf9db016af4291162175601eba51c7a980852b22bfa2b48"
+  },
+  "id": "X8kBVsS7vaMhoDVn",
+  "tags": []
+}
